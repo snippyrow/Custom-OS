@@ -12,6 +12,9 @@
 [extern pit_ghandler]
 
 kernel_begin:
+    mov al, 0xc
+    mov [0xa0000], al
+    
     call kmain
     jmp $
 
@@ -20,7 +23,7 @@ isr_stub:
     add esp, 8
     iret
 
-; 
+
 div0:
     mov eax, [esp]
     push eax
@@ -28,8 +31,9 @@ div0:
     jmp isr_stub
 
 doublefault:
-    push byte 0
-    push byte 8 ; int no
+    mov eax, [esp]
+    push eax
+    push byte 8 ; Interrupt number argument
     jmp isr_stub
 
 kbd_stub:

@@ -41,7 +41,7 @@ struct vbe_mode_info_structure {
 // As we set in Source/Loader/boot.s, we cast this structure over 0x6000. From osdever
 struct vbe_mode_info_structure* vbe_info = (struct vbe_mode_info_structure*)0x1000;
 
-unsigned char *FONT_BUFF = (unsigned char *)0x60000;
+unsigned char *FONT_BUFF = (unsigned char *)(0x60000 + 512);
 unsigned char *WORK_BUFF = (unsigned char *)0x100000; // start here, anything bellow and it eats into the botherboard BIOS
 
 uint16_t WIN_WIDTH;

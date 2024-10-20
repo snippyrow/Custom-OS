@@ -20,17 +20,20 @@ run:
 	dd if=Binaries/primary.bin of=main.img bs=512 count=63
 	dd if=Binaries/full.bin of=main.img bs=512 seek=2
 
-	# Super important to append font, used for debugging!
+	# Super important to append font, used for debugging! (should be seek 63)
 	dd if=Assets/font.bin of=main.img bs=512 seek=63
 
 	dd if=/dev/zero bs=1 count=99999 >> main.img
 
 	qemu-system-x86_64 \
-	-device sb16 -audio id=snd0,driver=alsa \
-    -drive file=main.img,format=raw,index=0,if=ide \
+	-enable-kvm \
+    -drive file=main.img,format=raw,index=0,if=none,id=mydrive \
+	-device ide-hd,drive=mydrive,cyls=1024,heads=16,secs=63 \
 	-cpu qemu64 \
     -m 128M \
     -d int \
     -no-reboot
 
 # sudo dd if=main.img of=/dev/sda bs=4M status=progress && sync
+# -enable-kvm
+# cloc . --exclude-dir=.venv

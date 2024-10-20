@@ -5,10 +5,35 @@ KERNEL equ 0x7e00
 
 ; Inclusions are from reference of compiler
 
+jmp start
 
 %include "Source/Loader/mac.s"
 
 
+DAPACK:
+    db 0x10              ; Size of the DAP (16 bytes)
+    db 0                 ; Reserved (must be 0)
+blkcnt: 
+    dw 30                ; This will hold the number of blocks actually read/written
+db_add: 
+    dw 0x0000           ; Segment part of the destination address (0x60000 / 16)
+    dw 0x6000           ; Offset part of the destination address (0x60000 % 16)
+d_lba: 
+    dd 32                 ; LBA address to read
+    dd 0                 ; Additional storage for large LBA values (if needed)
+
+
+DAPACK_CODE:
+    db 0x10              ; Size of the DAP (16 bytes)
+    db 0                 ; Reserved (must be 0)
+blkcnt2: 
+    dw 63                ; This will hold the number of blocks actually read/written
+db_add2: 
+    dw 0x0000           ; Segment part of the destination address (0x60000 / 16)
+    dw KERNEL >> 4           ; Offset part of the destination address (0x60000 % 16)
+d_lba2: 
+    dd 1                 ; LBA address to read
+    dd 0                 ; Additional storage for large LBA values (if needed)
 
 
 start:
@@ -17,48 +42,13 @@ start:
     call disk_reset
 
 
-    ;;
-    
-    mov ax, KERNEL
-    mov bx, ax
-    mov ax, 0
-    mov es, ax
-
-    ; Load reading arguments
-    mov al, 62 ; Number of sectors to read
-    mov ch, 0  ; Cylinder to read
-    mov cl, 2  ; Starting sector to read from
-    mov dh, 0  ; Head to read from
-    mov dl, 0x80 ; primary hard disk
-
-    mov ah, 2 ; BIOS code
-    int 0x13
-    jc mem_read_err ; carry set if error
-    
-    ;;
-
-    disk_read 0, 0, 2, 62, KERNEL, 0
-    ;disk_read 0, 1, 1, 40, 0x6000, 0
+    disk_read 0, 0, 2, 62, KERNEL >> 4, 0
+    disk_read 0, 0, 63, (63+41), 0x6000, 0
     ; Special code to write the font into 0x60000
-    mov ax, 0
-    mov bx, ax
-    mov ax, 0x6000  ; Change to 0x1A000
-    mov es, ax       ; Set ES to 0x1A000
+    ; Should be forty sectors read
+    ; disk_read 0, 1, 1, 41, 0x6000, 0
 
-    ; Load reading arguments
-    mov al, 40
-    mov ch, 0
-    mov cl, 1
-    mov dh, 1
-    mov dl, 0x80 ; primary hard disk
 
-    mov ah, 2 ; BIOS code
-    int 0x13
-    mov ax, 0
-    mov es, ax
-
-    jc mem_read_err ; carry set if error
-    
 
     print_str success
 

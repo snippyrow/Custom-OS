@@ -7,11 +7,20 @@ void init_buffer() {
     return;
 }
 
-void WIN_SwitchFrame() {
-    for (int i=0;i<(WIN_WIDTH*WIN_HEIGHT);i++) {
+void WIN_SwitchFrame(uint16_t boundx_0 = 0, uint16_t boundy_0 = 0, uint16_t boundx_1 = WIN_WIDTH, uint16_t boundy_1 = WIN_HEIGHT) {
+    for (int y = boundy_0; y < boundy_1; y++) {
+        uint32_t row_start = y * WIN_WIDTH;  // Compute row start outside the inner loop
+        for (int x = boundx_0; x < boundx_1; x++) {
+            uint32_t pixel = row_start + x;
+            WIN_FBUFF[pixel] = WORK_BUFF[pixel];
+        }
+    }
+}
+
+void WIN_SwitchFrame_A() {
+    for (int i=0;i<WIN_WIDTH*WIN_HEIGHT;i++) {
         WIN_FBUFF[i] = WORK_BUFF[i];
     }
-    return;
 }
 
 void WIN_RenderClear(unsigned char color) {
@@ -27,7 +36,6 @@ void WIN_FillRect(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t co
             WORK_BUFF[(y*WIN_WIDTH)+x] = color;
         }
     }
-    return;
 }
 
 void WIN_PutPixel(uint16_t x, uint16_t y, uint8_t color) {
@@ -35,7 +43,7 @@ void WIN_PutPixel(uint16_t x, uint16_t y, uint8_t color) {
     return;
 }
 
-void WIN_DrawChar(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, uint8_t character, uint8_t color) {
+void WIN_DrawChar(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, uint8_t character, uint8_t color, uint8_t bgcolor = 0xb0, bool clear = false) {
     // Pull from buffer 0xa000, bitmap
     int it = ((character/16)*8)+(character/16);
     int cX = (character%16)+(character%16)*8;
@@ -49,6 +57,8 @@ void WIN_DrawChar(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, uint
 
             if ((var)) {
                 WORK_BUFF[((y1+y)*WIN_WIDTH)+x1+x] = color;
+            } else if (!var && clear) {
+                WORK_BUFF[((y1+y)*WIN_WIDTH)+x1+x] = bgcolor;
             }
         }
     }

@@ -38,7 +38,7 @@ void error_handler(int interrupt_num, int interrupt_addr) {
         4,
         4,
         error_list[interrupt_num],
-        0xff
+        0
     );
 
     char* error_displaycode = hex64_str(interrupt_num);
@@ -83,7 +83,7 @@ void error_handler(int interrupt_num, int interrupt_addr) {
     free(*error_addr_finalstr,128);
     
     WIN_SwitchFrame();
-
+    cli();
     while(1);
     return;
 }

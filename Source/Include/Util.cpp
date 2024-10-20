@@ -202,6 +202,7 @@ uint64_t strlen(char* s) { // find string length (null-termed)
     return i;
 }
 
+// Concat two strings, without modifying the old one
 char* strcat(char* a, char* b) {
     // lengths do not include null terminator
     uint64_t lenA = strlen(a);
@@ -220,3 +221,23 @@ char* strcat(char* a, char* b) {
     return m_ptr;
 }
 
+// Concat the second on top of the first
+void strcat_m(char* a, char* b) {
+    // lengths do not include null terminator
+    uint64_t lenA = strlen(a);
+    uint64_t lenB = strlen(b);
+    uint64_t tot = 0;
+
+    for (int i=0;i<lenB;i++) {
+        a[i+lenA] = b[i];
+        tot++;
+    }
+    a[lenA+tot] = '\0';
+
+
+}
+
+// Split a string based on a given seperator. Modifies a table passed to it with the arguments, moderated by a maxsplit
+void strsplit(char* a, char seperator, char* table[], uint16_t maxsplit) {
+
+}
