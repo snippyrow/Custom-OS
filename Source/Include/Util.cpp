@@ -90,6 +90,7 @@ uint64_t malloc(uint32_t size_t) {
     return 0;
 }
 
+// Free blocks of memory based on a pointer passed to it.
 void free(uint64_t ptr, uint32_t size_t) {
     uint16_t start = ((ptr - 0x01000000) / block_size);
 
@@ -194,6 +195,25 @@ char* hex64_str(signed long num) {
     return m_ptr;
 }
 
+// converts hex/dec to an integer. 
+long str_int64(char* a) {
+    uint32_t i = 0;
+    long d = 0;
+    char n = 1;
+    while (a[i]) {
+        if (a[i] >= '0' && a[i] <= '9') {
+            d = (d * 10) + (a[i] - '0');
+        } else if (a[i] >= 'a' && a[i] <= 'f') {
+            d = (d << 4) + (a[i] - 'a') + 10;
+        } else if (a[i] == '-') {
+            n = n * - 1;
+        }
+        i++;
+    }
+    d = d * n;
+    return d;
+}
+
 uint64_t strlen(char* s) { // find string length (null-termed)
     int i = 0;
     while (s[i] != '\0') {
@@ -238,6 +258,70 @@ void strcat_m(char* a, char* b) {
 }
 
 // Split a string based on a given seperator. Modifies a table passed to it with the arguments, moderated by a maxsplit
-void strsplit(char* a, char seperator, char* table[], uint16_t maxsplit) {
+uint16_t strsplit(char* a, char separator, char table[][64], uint16_t maxsplit) {
+    uint32_t selection = 0;
+    uint32_t str_sel = 0;
+    uint32_t i = 0;
+    bool done = false;
 
+    while (a[i]) {
+        if (a[i] == separator && !done) {
+            table[selection][str_sel] = '\0';  // Null-terminate the current string
+            selection++;
+            str_sel = 0;  // Reset for the next string
+            if (selection + 1 == maxsplit) {
+                done = true;  // Stop if maxsplit is reached
+            }
+        } else {
+            table[selection][str_sel] = a[i];
+            str_sel++;
+        }
+        i++;
+    }
+
+    // Add the last string if there is any
+    table[selection][str_sel] = '\0';
+    
+    return selection;  // Return the number of splits (including the last part)
+}
+
+char* strlow(char* a) {
+    char* ptr = (char*)malloc(strlen(a)+2);
+    uint32_t i = 0;
+    while (a[i] != '\0') {
+        if (a[i] > 0x40 & a[i] < 0x5b) { // between capital A-Z
+            ptr[i] = a[i]+32;
+        } else {
+            ptr[i] = a[i];
+        }
+        i++;
+    }
+    ptr[i] = '\0'; // very important, otherwise malloc strings would be re-used, causing mass confusion.
+    return ptr;
+}
+
+char* strup(char* a) {
+    char* ptr = (char*)malloc(strlen(a)+2);
+    uint32_t i = 0;
+    while (a[i] != '\0') {
+        if (a[i] > 'a' & a[i] < 'z') { // between capital A-Z
+            ptr[i] = a[i]-32;
+        } else {
+            ptr[i] = a[i];
+        }
+        i++;
+    }
+    ptr[i] = '\0';
+    return ptr;
+}
+
+bool strcmp(char* a, char* b) {
+    uint32_t i = 0;
+    while (a[i] != '\0' || b[i] != '\0') {
+        if (a[i] != b[i]) {
+            return 0;
+        }
+        i++;
+    }
+    return 1;
 }

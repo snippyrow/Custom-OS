@@ -2,6 +2,7 @@
 // TTY Resolution: 51x38 (scale 2, 8x8)
 
 #include "shell.h"
+#include "runner.cpp"
 
 uint16_t shell_line = 0;
 uint16_t shell_column = 0;
@@ -11,10 +12,20 @@ bool shell_kbd_enabled = true;
 uint8_t tg;
 
 char shell_prompt[] = "[root *]: ";
-char shell_kbd_buffer[256] = {};
+char shell_kbd_buffer[256];
 bool upper = false;
 
 char SHELL_VideoMemory[SHELL_TTY_WIDTH][SHELL_TTY_HEIGHT][2];
+
+char commands[][2][256] = {
+    {"DIV","Divide two numbers"},
+};
+
+typedef void (*shell_ptr)();
+
+shell_ptr shell_handlers[] = {
+    shell_div
+};
 
 void shell_memory_render() {
     for (uint8_t x = 0;x<SHELL_TTY_WIDTH;x++) {
@@ -85,7 +96,6 @@ void shell_tty_print(char* string) {
 
         if (shell_line > SHELL_TTY_HEIGHT-1) {
             shell_memory_scroll();
-            shell_memory_render();
             shell_line = SHELL_TTY_HEIGHT-1;
         }
 
@@ -97,13 +107,57 @@ void shell_tty_set(uint16_t x, uint16_t y, char character) {
     SHELL_VideoMemory[x][y][1] = false;
 }
 
-void shell_enter_handler() {
-    char* newline = strcat("\n\"",shell_kbd_buffer);
-    char* newline2 = strcat(newline,"\"\n");
-    shell_tty_print(newline2);
 
-    free(*newline,strlen(newline) + 2);
-    free(*newline2,strlen(newline2) + 2);
+// **COMMAND PARSER IS FLIMSY AND DOES NOT WORK!**
+void shell_enter_handler() {
+    uint16_t numsplit = strsplit(shell_kbd_buffer, ' ', shell_argtable, SHELL_MAX_ARGS);
+    char* uppercmd = strup(shell_argtable[0]);
+
+    bool found = false;
+
+    for (int cmd = 0;cmd<sizeof(commands)/sizeof(commands[0]);cmd++) {
+        if (strcmp(commands[cmd][0], uppercmd)) {
+            found = true;
+            shell_handlers[cmd]();
+        }
+    }
+
+    if (!found) {
+        shell_tty_print(shell_notfound[0]);
+        shell_tty_print(shell_argtable[0]);
+        shell_tty_print(shell_notfound[1]);
+    }
+
+    free(*uppercmd, strlen(uppercmd)+2);
+    shell_tty_print("\n");
+    shell_tty_print(shell_prompt);
+    shell_memory_render();
+
+
+
+    // clear the keyboard buffer and argtables
+    for (int i=0;i<256;i++) {
+        shell_kbd_buffer[i] = '\0';
+    }
+    for (int arg=0;arg<SHELL_MAX_ARGS;arg++) {
+        for (int c=0;c<64;c++) {
+            shell_argtable[arg][c] = '\0';
+        }
+    }
+
+}
+
+/*
+void shell_enter_handler() {
+    uint16_t numsplit = strsplit(shell_kbd_buffer, ' ', shell_argtable, SHELL_MAX_ARGS);
+    shell_tty_print("\n");
+    for (int i=0;i<=numsplit;i++) {
+        shell_tty_print("\"");
+        shell_tty_print(shell_argtable[i]);
+        shell_tty_print("\" ");
+    }
+
+    shell_tty_print("\n");
 
     shell_tty_print(shell_prompt);
 
@@ -118,6 +172,7 @@ void shell_enter_handler() {
 
     return;
 }
+*/
 
 // todo: add backspace, propper tab, enter handler, caps lock, basic argument and command reader
 

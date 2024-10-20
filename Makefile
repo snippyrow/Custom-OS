@@ -21,7 +21,7 @@ run:
 	dd if=Binaries/full.bin of=main.img bs=512 seek=2
 
 	# Super important to append font, used for debugging! (should be seek 63)
-	dd if=Assets/font.bin of=main.img bs=512 seek=63
+	dd if=Assets/font_n.bin of=main.img bs=512 seek=63
 
 	dd if=/dev/zero bs=1 count=99999 >> main.img
 

@@ -14,12 +14,6 @@ void empty() {
     for (int x=0;x<WIN_WIDTH*5;x++) {
         WORK_BUFF[begin+x] = i;
     }
-    int ie = 0;
-    if (i == 1000) {
-        for (int x=0;x<5;x++) {
-            ie = 5/x;
-        }
-    }
     WIN_SwitchFrame(0,WIN_HEIGHT-5,WIN_WIDTH,WIN_HEIGHT);
     return;
 }
