@@ -5,10 +5,12 @@
 [global div0]
 [global doublefault]
 [global kbd_stub]
+[global mouse_stub]
 [global pit_stub]
 
 [extern isr_ghandler]
 [extern kbd_ghandler]
+[extern mouse_ghandler]
 [extern pit_ghandler]
 
 kernel_begin:
@@ -38,6 +40,10 @@ doublefault:
 
 kbd_stub:
     call kbd_ghandler
+    iret
+
+mouse_stub:
+    call mouse_ghandler
     iret
 
 pit_stub:

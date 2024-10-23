@@ -4,13 +4,16 @@
 
 void (*kbd_hook)();
 void (*ch0_hook)();
+void (*mouse_hook)();
 void (*err_hook)(int interrupt_num, int error_code);
 
 // Define from assembly
 extern "C" void div0();
 extern "C" void doublefault();
 extern "C" void kbd_stub();
+extern "C" void mouse_stub();
 extern "C" void pit_stub();
+
 
 void set_idt_gate(uint8_t gate, uint32_t hook) {
     idt[gate].offset_lo = low_16(hook);
@@ -37,6 +40,12 @@ extern "C" void kbd_ghandler() {
     return;
 }
 
+extern "C" void mouse_ghandler() {
+    //mouse_hook();
+    outb(0x20, 0x20); // EOI
+    return;
+}
+
 
 // Add required fields
 void idt_install() {
@@ -46,6 +55,8 @@ void idt_install() {
 
     set_idt_gate(32, (uint32_t)pit_stub); // This is the system timer and MUST be enabled, or else we receive double/tripple faults
     set_idt_gate(33,(uint32_t)kbd_stub);
+
+    set_idt_gate(44,(uint32_t)mouse_stub);
 
     // blank functions
 
@@ -72,6 +83,7 @@ void idt_install() {
     outb(0xA1, 0x0);
 
     outb(0x21, 0b11111100); // only unmask PIT and keyboard (IRQ0 and IRQ1)
+    outb(0xA1, 0b11110111); // Only unmask PS/2 mouse
 
     idt_desc.base = (uint32_t) &idt;
     idt_desc.limit = 0xff * sizeof(idt_gate) - 1;

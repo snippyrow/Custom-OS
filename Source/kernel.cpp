@@ -6,6 +6,7 @@
 #include "Drivers/ATA.cpp"
 #include "Shell/shell.cpp"
 #include "Interrupt/error.cpp"
+#include "Interrupt/mouse.cpp"
 
 int i=0;
 void empty() {
@@ -22,6 +23,17 @@ void kkk() {
     uint8_t scan = inb(0x60);
     WIN_RenderClear(0xc);
     WIN_SwitchFrame_A();
+}
+
+void mouse_test() {
+    mouse_dapacket packet = mouse_read();
+    for (int x=50;x<100;x++) {
+        for (int y=0;y<100;y++) {
+            WIN_FBUFF[(y*WIN_WIDTH)+x] = 0xc;
+        }
+    }
+    
+    return;
 }
 
 // For some reason interrupts cause a fault when triggered.. Probably for long mode
@@ -55,10 +67,12 @@ extern "C" void kmain() {
     
     ch0_hook = empty;
     kbd_hook = shell_kbd_hook;
+    mouse_hook = mouse_test;
     err_hook = error_handler;
     WORK_BUFF[0] = 0x2;
 
     initPIT(30);
+    initMouse();
     idt_install();
 
     uint8_t ATA_Data[512] = {0x69, 0x42};
