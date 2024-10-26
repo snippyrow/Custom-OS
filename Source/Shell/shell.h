@@ -39,6 +39,26 @@ const char keymap_shift[] = {
 };
 
 void shell_tty_print(char* string);
+void shell_memory_render();
+void shell_tty_clear();
+
+void shell_div();
+void shell_help();
+void ata_test_device();
+
+char commands[][2][128] = {
+    {"BOOT","Bring up boot manager"},
+    {"CLEAR","Clear TTY"},
+    {"DIV","(A) (B) Divide two numbers"},
+    {"HELP","Get help on commands"},
+    {"HEXEDIT","(LBA) Reads the primary ATA device"}
+};
+
+typedef void (*shell_ptr)();
+
+shell_ptr shell_handlers[] = {
+    (shell_ptr)1,shell_tty_clear, shell_div, shell_help, ata_test_device
+};
 
 #endif  // End of include guard
 

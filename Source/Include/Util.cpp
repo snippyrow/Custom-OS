@@ -289,7 +289,7 @@ char* strlow(char* a) {
     char* ptr = (char*)malloc(strlen(a)+2);
     uint32_t i = 0;
     while (a[i] != '\0') {
-        if (a[i] > 0x40 & a[i] < 0x5b) { // between capital A-Z
+        if (a[i] >= 0x40 & a[i] <= 0x5b) { // between capital A-Z
             ptr[i] = a[i]+32;
         } else {
             ptr[i] = a[i];
@@ -304,7 +304,7 @@ char* strup(char* a) {
     char* ptr = (char*)malloc(strlen(a)+2);
     uint32_t i = 0;
     while (a[i] != '\0') {
-        if (a[i] > 'a' & a[i] < 'z') { // between capital A-Z
+        if (a[i] >= 'a' & a[i] <= 'z') { // between capital A-Z
             ptr[i] = a[i]-32;
         } else {
             ptr[i] = a[i];

@@ -17,16 +17,6 @@ bool upper = false;
 
 char SHELL_VideoMemory[SHELL_TTY_WIDTH][SHELL_TTY_HEIGHT][2];
 
-char commands[][2][256] = {
-    {"DIV","Divide two numbers"},
-};
-
-typedef void (*shell_ptr)();
-
-shell_ptr shell_handlers[] = {
-    shell_div
-};
-
 void shell_memory_render() {
     for (uint8_t x = 0;x<SHELL_TTY_WIDTH;x++) {
         for (uint8_t y = 0;y<SHELL_TTY_HEIGHT;y++) {
@@ -103,6 +93,18 @@ void shell_tty_print(char* string) {
     }
 }
 
+void shell_tty_clear() {
+    for (uint8_t x = 0;x<SHELL_TTY_WIDTH;x++) {
+        for (uint8_t y = 0;y<SHELL_TTY_HEIGHT;y++) {
+            SHELL_VideoMemory[x][y][0] = ' ';
+            SHELL_VideoMemory[x][y][1] = false;
+        }
+    }
+    shell_line = 0;
+    shell_column = 0;
+    shell_memory_render();
+}
+
 void shell_tty_set(uint16_t x, uint16_t y, char character) {
     SHELL_VideoMemory[x][y][0] = character;
     SHELL_VideoMemory[x][y][1] = false;
@@ -115,7 +117,6 @@ void shell_enter_handler() {
     char* uppercmd = strup(shell_argtable[0]);
 
     bool found = false;
-
     for (int cmd = 0;cmd<sizeof(commands)/sizeof(commands[0]);cmd++) {
         if (strcmp(commands[cmd][0], uppercmd)) {
             found = true;
