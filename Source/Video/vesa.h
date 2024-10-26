@@ -1,3 +1,6 @@
+#ifndef WORKE_BUFF_HW  // Include guard to prevent redefinition
+#define WORKE_BUFF_HW
+
 #include "../Include/stdint.h"
 
 struct vbe_mode_info_structure {
@@ -48,3 +51,5 @@ uint16_t WIN_WIDTH;
 uint16_t WIN_HEIGHT;
 
 uint8_t *WIN_FBUFF;
+
+#endif

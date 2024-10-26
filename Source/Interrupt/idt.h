@@ -1,3 +1,6 @@
+#ifndef MYHEADER_H2
+#define MYHEADER_H2
+
 #include "../Include/stdint.h"
 
 typedef struct {
@@ -12,6 +15,19 @@ typedef struct {
     uint16_t limit;
     uint32_t base;
 } __attribute__((packed)) idt_reg;
+
+
+void (*ch0_hook)();
+void (*err_hook)(int interrupt_num, int error_code);
+
+
+
+// Define from assembly
+extern "C" void div0();
+extern "C" void doublefault();
+extern "C" void kbd_stub();
+extern "C" void mouse_stub();
+extern "C" void pit_stub();
 
 char error_list[32][32] = {
     "Division Error",
@@ -50,3 +66,5 @@ char error_list[32][32] = {
 idt_gate idt[256];
 
 idt_reg idt_desc;
+
+#endif  // End of include guard

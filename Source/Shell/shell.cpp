@@ -40,6 +40,7 @@ void shell_memory_render() {
             }
         }
     }
+    WIN_DrawMouse();
 }
 
 // Scrolls the video memory up once, and re-renders. Irreversable!

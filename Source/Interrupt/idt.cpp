@@ -1,18 +1,7 @@
 #include "idt.h"
 #include "../Include/Util.h"
 #include "../Include/Util.cpp"
-
-void (*kbd_hook)();
-void (*ch0_hook)();
-void (*mouse_hook)();
-void (*err_hook)(int interrupt_num, int error_code);
-
-// Define from assembly
-extern "C" void div0();
-extern "C" void doublefault();
-extern "C" void kbd_stub();
-extern "C" void mouse_stub();
-extern "C" void pit_stub();
+#include "ps2.cpp"
 
 
 void set_idt_gate(uint8_t gate, uint32_t hook) {
@@ -35,14 +24,17 @@ extern "C" void pit_ghandler() {
 }
 
 extern "C" void kbd_ghandler() {
-    kbd_hook();
-    outb(0x20, 0x20); // EOI
+    ps2_int_process(0);
+    ps2_int_finish();
+    //outb(0x20, 0x20); // EOI
     return;
 }
 
 extern "C" void mouse_ghandler() {
-    //mouse_hook();
-    outb(0x20, 0x20); // EOI
+    ps2_int_process(1);
+    ps2_int_finish();
+    //outb(0x20, 0x20); // EOI
+    //outb(0xa0, 0x20); // Second EOI for slave PIC
     return;
 }
 
@@ -82,8 +74,9 @@ void idt_install() {
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
 
-    outb(0x21, 0b11111100); // only unmask PIT and keyboard (IRQ0 and IRQ1)
-    outb(0xA1, 0b11110111); // Only unmask PS/2 mouse
+    outb(0x21, 0b11111000); // only unmask PIT, Cascade PIC and keyboard (IRQ0 and IRQ1 and IRQ2)
+    outb(0xA1, 0b11101111); // Only unmask PS/2 mouse
+
 
     idt_desc.base = (uint32_t) &idt;
     idt_desc.limit = 0xff * sizeof(idt_gate) - 1;

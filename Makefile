@@ -26,6 +26,7 @@ run:
 	dd if=/dev/zero bs=1 count=99999 >> main.img
 
 	qemu-system-x86_64 \
+	-device sb16 \
 	-enable-kvm \
     -drive file=main.img,format=raw,index=0,if=none,id=mydrive \
 	-device ide-hd,drive=mydrive,cyls=1024,heads=16,secs=63 \

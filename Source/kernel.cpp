@@ -6,10 +6,10 @@
 #include "Drivers/ATA.cpp"
 #include "Shell/shell.cpp"
 #include "Interrupt/error.cpp"
-#include "Interrupt/mouse.cpp"
+#include "Interrupt/sb16.cpp"
 
 int i=0;
-void empty() {
+void testbar() {
     i = i + 1;
     uint32_t begin = (WIN_HEIGHT - 5) * WIN_WIDTH;
     for (int x=0;x<WIN_WIDTH*5;x++) {
@@ -25,23 +25,19 @@ void kkk() {
     WIN_SwitchFrame_A();
 }
 
-void mouse_test() {
-    mouse_dapacket packet = mouse_read();
-    for (int x=50;x<100;x++) {
-        for (int y=0;y<100;y++) {
-            WIN_FBUFF[(y*WIN_WIDTH)+x] = 0xc;
-        }
-    }
-    
-    return;
-}
-
 // For some reason interrupts cause a fault when triggered.. Probably for long mode
 // Switch GDT to long struct
 // Fix severe hardware issues, probably caused by extra video modes
 
 // window functions arent fast enough and cause issues
 // KVM Must be enabled for normal operation
+// Mouse itnerferes with keyboard. Fix by doing some pre-processing and my own keyboard buffer
+
+void mouse_middle_test() {
+    shell_tty_print("Middle!");
+    shell_tty_print("\n");
+    shell_memory_render();
+}
 
 extern "C" void kmain() {
     init_buffer();
@@ -65,15 +61,21 @@ extern "C" void kmain() {
     */
     //*(uint8_t *)0xa0000 = 0xc;
     
-    ch0_hook = empty;
+    ch0_hook = testbar;
     kbd_hook = shell_kbd_hook;
-    mouse_hook = mouse_test;
     err_hook = error_handler;
+
+
     WORK_BUFF[0] = 0x2;
 
     initPIT(30);
-    initMouse();
     idt_install();
+    initMouse();
+
+    mouse_middle_hook = mouse_middle_test;
+
+    sb_init();            // Initialize the Sound Blaster
+    sb_play_tone(1000);  // Play a 1000 Hz tone
 
     uint8_t ATA_Data[512] = {0x69, 0x42};
     //ATA_Read(0,1,ATA_Data);
@@ -107,10 +109,13 @@ extern "C" void kmain() {
 }
 
 // The things I need to do:
-// Write an ATA driver
-// Get 64-bit code working well
+
+// Write an ATA driver (?)
+// Get 64-bit code working well (?)
 // Write a sound driver
 // Memory Allocator (done)
+// Filesystem
+// PS/2 Mouse**
 
 /*
 The primary issue is that calling a frame switch too often can drop interrupts.
