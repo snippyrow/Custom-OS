@@ -31,7 +31,7 @@ struct mouse_properties {
 } __attribute__ ((packed));
 
 // When a mouse is moved, the back needs to be re-rendered. This is supposed to do that.
-uint8_t mouse_mask[8][8];
+uint8_t mouse_mask[88];
 
 // each pixel only needs three combinations, so 00-11. Four pixels per byte, (6*6)*4 = 144
 // Sprite is 11x7, so
@@ -51,3 +51,5 @@ uint8_t mouse_sprite[22] = {
 };
 
 mouse_properties mouse_position;
+
+void WIN_FillRect(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t color);

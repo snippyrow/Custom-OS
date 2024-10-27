@@ -73,8 +73,3 @@ void WIN_DrawString(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, ch
     }
     return;
 }
-
-void WIN_DrawMouse() {
-    WIN_FillRect(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11, 0xc);
-    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11);
-}

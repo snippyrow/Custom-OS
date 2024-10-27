@@ -41,10 +41,14 @@ const char keymap_shift[] = {
 void shell_tty_print(char* string);
 void shell_memory_render();
 void shell_tty_clear();
+void shell_win_test();
+uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable);
 
 void shell_div();
 void shell_help();
 void ata_test_device();
+
+bool shell_tty_enabled = true;
 
 char commands[][2][128] = {
     {"BOOT","Bring up boot manager"},
@@ -57,7 +61,7 @@ char commands[][2][128] = {
 typedef void (*shell_ptr)();
 
 shell_ptr shell_handlers[] = {
-    (shell_ptr)1,shell_tty_clear, shell_div, shell_help, ata_test_device
+    shell_win_test, shell_tty_clear, shell_div, shell_help, ata_test_device
 };
 
 #endif  // End of include guard

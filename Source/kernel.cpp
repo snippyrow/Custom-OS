@@ -9,6 +9,7 @@
 
 int i=0;
 void testbar() {
+    return;
     i = i + 1;
     uint32_t begin = (WIN_HEIGHT - 5) * WIN_WIDTH;
     for (int x=0;x<WIN_WIDTH*5;x++) {
@@ -57,7 +58,11 @@ extern "C" void kmain() {
     shell_tty_print(shell_prompt);
     shell_memory_render();
 
+    //window_render(w_id);
+
     sti();
+
+    mouse_left_hook = window_left;
     
     while(1){}
 

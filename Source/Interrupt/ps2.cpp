@@ -99,6 +99,23 @@ mouse_dapacket m_read() {
     return packet;
 }
 
+void mouse_mask_update() {
+    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + 8;x++) {
+        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + 11;y++) {
+            uint16_t cX = x - mouse_position.pos_x;
+            uint16_t cY = y - mouse_position.pos_y;
+            mouse_mask[(cY * 8) + cX] = WORK_BUFF[(y * WIN_WIDTH) + x];
+        }
+    }
+}
+
+void WIN_DrawMouse() {
+    // Fill the mouse mask before re-drawing over it
+    mouse_mask_update();
+
+    WIN_FillRect(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11, 0xc);
+    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11);
+}
 
 // Primary mouse handler/driver. All rendering and movement is controlled by the driver, however buttons are hooked. Hover TBD.
 void mouse_handle() {
@@ -107,7 +124,9 @@ void mouse_handle() {
     
     for (int x=mouse_position.pos_x;x<mouse_position.pos_x + 8;x++) {
         for (int y=mouse_position.pos_y;y<mouse_position.pos_y + 11;y++) {
-            WORK_BUFF[(y * WIN_WIDTH) + x] = 0xb0; // 0xb0
+            uint16_t cX = x - mouse_position.pos_x;
+            uint16_t cY = y - mouse_position.pos_y;
+            WORK_BUFF[(y * WIN_WIDTH) + x] = mouse_mask[(cY * 8) + cX]; // 0xb0
         }
     }
     WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x+8,mouse_position.pos_y+11);
@@ -153,29 +172,48 @@ void mouse_handle() {
     } else if (newpos_y >= WIN_HEIGHT-11) {
         newpos_y = WIN_HEIGHT - 11;
     }
-
-
     mouse_position.pos_x = newpos_x;
     mouse_position.pos_y = newpos_y;
     
     uint8_t combined = !(packet.mov_x & packet.mov_y & packet.flags);
 
+    bool fire_left;
+    bool fire_middle;
+    bool fire_right;
+
     // After mouse has finsihed calcualting, hook into buttons
     if ((packet.flags & 0b00001000) && !((packet.flags & 0b11000000))) { // If no invalid packets were sent, update
         if (!(combined == 0xff) && packet.mov_x == 0 && packet.mov_y == 0) { // i all three bytes were maxed out, invalid
+
+            if ((packet.flags & 1) != mouse_position.button_left_pressed) {
+                // check if button changed
+                fire_left = true;
+            }
+            if ((packet.flags & 4) != mouse_position.button_middle_pressed) {
+                // check if button changed
+                fire_middle = true;
+            }
+            if ((packet.flags & 2) != mouse_position.button_right_pressed) {
+                // check if button changed
+                fire_right = true;
+            }
+        
             mouse_position.button_right_pressed = packet.button_right;
             mouse_position.button_middle_pressed = packet.button_middle;
             mouse_position.button_left_pressed = packet.button_left;
 
-            if (packet.button_right) {
+            if (fire_right) {
                 mouse_right_hook();
             }
-            if (packet.button_middle) {
+            if (fire_middle) {
                 mouse_middle_hook();
             }
-            if (packet.button_left) {
+            if (fire_left) {
                 mouse_left_hook();
             }
+            fire_left = false;
+            fire_middle = false;
+            fire_right = false;
         }
     }
 

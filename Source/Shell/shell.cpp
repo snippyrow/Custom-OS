@@ -18,6 +18,9 @@ bool upper = false;
 char SHELL_VideoMemory[SHELL_TTY_WIDTH][SHELL_TTY_HEIGHT][2];
 
 void shell_memory_render() {
+    if (!shell_tty_enabled) {
+        return;
+    }
     for (uint8_t x = 0;x<SHELL_TTY_WIDTH;x++) {
         for (uint8_t y = 0;y<SHELL_TTY_HEIGHT;y++) {
             char character = SHELL_VideoMemory[x][y][0];
@@ -30,7 +33,7 @@ void shell_memory_render() {
             }
         }
     }
-    WIN_DrawMouse();
+    //WIN_DrawMouse();
 }
 
 // Scrolls the video memory up once, and re-renders. Irreversable!
@@ -48,6 +51,9 @@ void shell_memory_scroll() {
 }
 
 void shell_tty_print(char* string) {
+    if (!shell_tty_enabled) {
+        return;
+    }
     uint32_t i = 0;
     while (string[i]) {
         switch(string[i]) {
@@ -94,6 +100,9 @@ void shell_tty_print(char* string) {
 }
 
 void shell_tty_clear() {
+    if (!shell_tty_enabled) {
+        return;
+    }
     for (uint8_t x = 0;x<SHELL_TTY_WIDTH;x++) {
         for (uint8_t y = 0;y<SHELL_TTY_HEIGHT;y++) {
             SHELL_VideoMemory[x][y][0] = ' ';
@@ -113,6 +122,9 @@ void shell_tty_set(uint16_t x, uint16_t y, char character) {
 
 // **COMMAND PARSER IS FLIMSY AND DOES NOT WORK!**
 void shell_enter_handler() {
+    if (!shell_tty_enabled) {
+        return;
+    }
     uint16_t numsplit = strsplit(shell_kbd_buffer, ' ', shell_argtable, SHELL_MAX_ARGS);
     char* uppercmd = strup(shell_argtable[0]);
 
@@ -180,6 +192,9 @@ void shell_enter_handler() {
 
 void shell_kbd_hook() {
     uint8_t scancode = inb(0x60);
+    if (!shell_tty_enabled) {
+        return;
+    }
     if (!shell_kbd_enabled) {
         return;
     }

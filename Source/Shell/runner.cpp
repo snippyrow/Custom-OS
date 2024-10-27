@@ -65,3 +65,12 @@ void ata_test_device() {
     
     free(*ata_read_table,512);
 }
+
+void shell_win_test() {
+    // Destroy TTY system
+    WIN_RenderClear(0xaf);
+    WIN_SwitchFrame_A();
+    shell_tty_enabled = false;
+    uint8_t w_id = window_create(50,50,600,400,true,true);
+    WIN_DrawMouse();
+}

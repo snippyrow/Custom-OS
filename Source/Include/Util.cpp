@@ -325,3 +325,21 @@ bool strcmp(char* a, char* b) {
     }
     return 1;
 }
+
+// Construct a rectangle based on (x0, y0) and (x1, y1), and check for an intersection at (px, py)
+bool rect_collide(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t px, uint32_t py) {
+    // (x0, y0) is the top-left and (x1, y1) is the bottom-right
+    if (x0 > x1) {
+        uint32_t temp = x0;
+        x0 = x1;
+        x1 = temp;
+    }
+    if (y0 > y1) {
+        uint32_t temp = y0;
+        y0 = y1;
+        y1 = temp;
+    }
+    
+    // Check if point (px, py) is within the rectangle bounds
+    return (px >= x0 && px <= x1) && (py >= y0 && py <= y1);
+}
