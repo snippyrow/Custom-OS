@@ -71,6 +71,8 @@ void initMouse() {
     mouse_position.pos_x = 500;
     mouse_position.pos_y = 100;
 
+    // DANGER: Increasing mouse scale seems to "drag" parts of the screen through the mask. Fun to play with but needs fixing.
+
     mouse_position.scale_x = 1;
     mouse_position.scale_y = 1;
 
@@ -99,37 +101,15 @@ mouse_dapacket m_read() {
     return packet;
 }
 
-void mouse_mask_update() {
-    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + 8;x++) {
-        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + 11;y++) {
-            uint16_t cX = x - mouse_position.pos_x;
-            uint16_t cY = y - mouse_position.pos_y;
-            mouse_mask[(cY * 8) + cX] = WORK_BUFF[(y * WIN_WIDTH) + x];
-        }
-    }
-}
-
-void WIN_DrawMouse() {
-    // Fill the mouse mask before re-drawing over it
-    mouse_mask_update();
-
-    WIN_FillRect(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11, 0xc);
-    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11);
-}
-
 // Primary mouse handler/driver. All rendering and movement is controlled by the driver, however buttons are hooked. Hover TBD.
 void mouse_handle() {
     uint16_t start;
+
     mouse_dapacket packet = m_read();
     
-    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + 8;x++) {
-        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + 11;y++) {
-            uint16_t cX = x - mouse_position.pos_x;
-            uint16_t cY = y - mouse_position.pos_y;
-            WORK_BUFF[(y * WIN_WIDTH) + x] = mouse_mask[(cY * 8) + cX]; // 0xb0
-        }
-    }
-    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x+8,mouse_position.pos_y+11);
+    
+    mouse_mask_render();
+    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x+(8 * mouse_position.scale_x),mouse_position.pos_y+(11 * mouse_position.scale_y));
 
     // if sign is 1 then minus
     short newpos_x = mouse_position.pos_x;

@@ -61,8 +61,6 @@ extern "C" void kmain() {
     //window_render(w_id);
 
     sti();
-
-    mouse_left_hook = window_left;
     
     while(1){}
 
@@ -83,6 +81,10 @@ extern "C" void kmain() {
 // Boot sequence:
 // use a command to list bootable addresses, then boot into that address with another command (or alias)
 // For this purpose use a good ATA driver
+
+// Window todo:
+// Get a good mouse cursor
+// Window move preview
 
 /*
 The primary issue is that calling a frame switch too often can drop interrupts.

@@ -30,6 +30,18 @@ void windows_init() {
     return;
 }
 
+char* str_truncate(char* a, uint16_t width, uint16_t textscale) { // width in pixels
+    uint16_t char_width = textscale * 8;           // Width of each character in pixels
+    uint16_t max_chars = width / char_width;       // Maximum number of characters that can fit in the given width
+
+    // Truncate the string if it exceeds the maximum allowed characters
+    if (strlen(a) > max_chars) {
+        a[max_chars] = '\0';                       // Truncate the string at max_chars
+    }
+
+    return a;
+}
+
 // 0x1d = window background
 // 0x18 = window border
 // 0x11 = window shadow
@@ -72,7 +84,9 @@ void window_render(uint8_t win_id) {
         0x1d
     );
 
-    WIN_DrawString(win_sel.win_pos_x + window_border_width + 2, win_sel.win_pos_y + window_border_width + 2, 2, 2, win_sel.title, 0x0);
+    char* win_title = str_truncate(win_sel.title, win_sel.win_size_x, 2);
+
+    WIN_DrawString(win_sel.win_pos_x + window_border_width + 2, win_sel.win_pos_y + window_border_width + 2, 2, 2, win_title, 0x0);
 
     // Render bounding box
     WIN_SwitchFrame(win_sel.win_pos_x - window_bounding_width, win_sel.win_pos_y - window_bounding_width, win_sel.win_pos_x + win_sel.win_size_x + window_bounding_width, win_sel.win_pos_y + win_sel.win_size_y + window_bounding_width);
@@ -107,6 +121,7 @@ uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_
     for (int id=0;id<31;id++) {
         if (window_list[id].win_selected) {
             window_list[id].win_selected = false;
+            window_erase(id);
             window_render(id);
         }
     }
@@ -178,22 +193,35 @@ void window_left() {
     if (!press_exists) { // initiating a click, find affected windows
         press_exists = true;
         for (int win_id=0;win_id<31;win_id++) {
-            if (window_list[win_id].win_selected) {
-                // Now the selected window is found, check for a topbar intersection
-                if (rect_collide(
-                    window_list[win_id].win_pos_x,
-                    window_list[win_id].win_pos_y,
-                    window_list[win_id].win_pos_x + window_list[win_id].win_size_x,
-                    window_list[win_id].win_pos_y + window_topbar_height + window_border_width,
-                    mouse_position.pos_x,
-                    mouse_position.pos_y
-                )) {
-                    // If so, select and break
+            // Now the selected window is found, check for a topbar intersection
+            if (rect_collide(
+                window_list[win_id].win_pos_x,
+                window_list[win_id].win_pos_y,
+                window_list[win_id].win_pos_x + window_list[win_id].win_size_x,
+                window_list[win_id].win_pos_y + window_topbar_height + window_border_width,
+                mouse_position.pos_x,
+                mouse_position.pos_y
+            )) {
+                // If so, check if the window is already selected. If not, select it and wait for the next turn.
+                if (window_list[win_id].win_selected) {
                     window_mover_selection = win_id;
                     mouse_start_x = mouse_position.pos_x;
                     mouse_start_y = mouse_position.pos_y;
-                    break;
+                } else {
+                    for (int id=0;id<31;id++) {
+                        if (window_list[id].win_selected && id != win_id) {
+                            window_list[id].win_selected = false;
+                            window_erase(id);
+                            window_render(id);
+                        }
+                        if (!window_list[id].win_selected && id == win_id) {
+                            window_list[id].win_selected = true;
+                            window_erase(id);
+                            window_render(id);
+                        }
+                    }
                 }
+                break;
             }
         }
     } else {
@@ -204,4 +232,51 @@ void window_left() {
             window_mover_selection = 0xff;
         }
     }
+}
+
+void mouse_mask_update() {
+    uint8_t m_scale_x = mouse_position.scale_x;
+    uint8_t m_scale_y = mouse_position.scale_y;
+    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + (8 * m_scale_x);x++) {
+        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + (11 * m_scale_y);y++) {
+            uint16_t cX = x - mouse_position.pos_x;
+            uint16_t cY = y - mouse_position.pos_y;
+            mouse_mask[((cY / m_scale_y) * 8) + (cX / m_scale_x)] = WORK_BUFF[(y * WIN_WIDTH) + x];
+        }
+    }
+}
+
+void mouse_mask_render() {
+    uint8_t m_scale_x = mouse_position.scale_x;
+    uint8_t m_scale_y = mouse_position.scale_y;
+    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + (8 * m_scale_x);x++) {
+        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + (11 * m_scale_y);y++) {
+            uint16_t cX = x - mouse_position.pos_x;
+            uint16_t cY = y - mouse_position.pos_y;
+            WORK_BUFF[(y * WIN_WIDTH) + x] = mouse_mask[((cY / m_scale_y) * 8) + (cX / m_scale_x)]; // 0xb0
+        }
+    }
+}
+
+void WIN_DrawMouse() {
+    // Fill the mouse mask before re-drawing over it
+    mouse_mask_update();
+    uint8_t m_scale_x = mouse_position.scale_x;
+    uint8_t m_scale_y = mouse_position.scale_y;
+    //WIN_FillRect(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11, 0xc);
+    for (int y = 0;y<(11 * m_scale_y);y++) {
+        for (int x = 0;x<(8 * m_scale_x);x++) {
+            uint16_t abs_pos_x = mouse_position.pos_x + x;
+            uint16_t abs_pos_y = mouse_position.pos_y + y;
+            uint8_t ptr = ((y / m_scale_y) * 8 + (x / m_scale_x)) / 4;
+            uint8_t shift = (3-((x / m_scale_x)%4))*2;
+            uint8_t digit = (mouse_sprite[ptr] & (3 << shift)) >> shift;
+            if (digit == 1) {
+                WORK_BUFF[abs_pos_y * WIN_WIDTH + abs_pos_x] = 0xf;
+            } else if (digit == 2) {
+                WORK_BUFF[abs_pos_y * WIN_WIDTH + abs_pos_x] = 0x0;
+            }
+        }
+    }
+    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + (8 * m_scale_x),mouse_position.pos_y + (11 * m_scale_y));
 }

@@ -71,6 +71,9 @@ void shell_win_test() {
     WIN_RenderClear(0xaf);
     WIN_SwitchFrame_A();
     shell_tty_enabled = false;
-    uint8_t w_id = window_create(50,50,600,400,true,true);
+    mouse_left_hook = window_left;
+    windows_init();
+    uint8_t w_id = window_create(50,50,700,400,true,true);
+    uint8_t w_id2 = window_create(600,300,100,75,true,true);
     WIN_DrawMouse();
 }

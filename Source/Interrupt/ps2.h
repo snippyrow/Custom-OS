@@ -34,7 +34,7 @@ struct mouse_properties {
 uint8_t mouse_mask[88];
 
 // each pixel only needs three combinations, so 00-11. Four pixels per byte, (6*6)*4 = 144
-// Sprite is 11x7, so
+// Sprite is 11x8, so
 // 00 for no color, 01 for black, 10 for white
 uint8_t mouse_sprite[22] = {
     0b01000000, 0b00000000,
@@ -53,3 +53,5 @@ uint8_t mouse_sprite[22] = {
 mouse_properties mouse_position;
 
 void WIN_FillRect(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t color);
+void mouse_mask_update();
+void mouse_mask_render();

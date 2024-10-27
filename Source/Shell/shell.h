@@ -43,6 +43,8 @@ void shell_memory_render();
 void shell_tty_clear();
 void shell_win_test();
 uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable);
+void window_left();
+void windows_init();
 
 void shell_div();
 void shell_help();
