@@ -1,22 +1,6 @@
 #include "window.h"
-
-uint16_t window_creation_offset_x;
-uint16_t window_creation_offset_y;
-
-uint16_t window_shadow_offset_x = 3;
-uint16_t window_shadow_offset_y = 3;
-
-uint16_t window_topbar_height = 30;
-uint16_t window_border_width = 3;
-
-uint8_t new_id;
-
-uint16_t window_bounding_width = 5;
-uint16_t desktop_padding = 5;
-
-uint8_t window_mover_selection = 0xff;
-
-uint8_t desktop_bg = 0xaf;
+#include "mouse.cpp"
+#include "preview.cpp"
 
 // Specs for windows:
 // Each window has a "box of effect", or a bounding box, extending window_bounding_width pixels from the edge of the window. Includes shadow
@@ -27,6 +11,7 @@ void windows_init() {
     window_creation_offset_x = (WIN_WIDTH / 4);
     window_creation_offset_y = (WIN_HEIGHT / 4);
     new_id = 0;
+    new_preview_id = 0;
     return;
 }
 
@@ -111,7 +96,7 @@ void window_erase(uint8_t win_id) {
     return;
 }
 
-uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable = true, bool win_sizable = true) {
+uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable, char* title) {
     // If too many windows have been created
     if (new_id >= 31) {
         return 0xff;
@@ -127,7 +112,7 @@ uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_
     }
 
     // Fill in our window
-    window_root new_window = {win_pos_x, win_pos_y, win_size_x, win_size_y, 5, new_id, true, win_draggable, win_sizable, true, false, "Test window"};
+    window_root new_window = {win_pos_x, win_pos_y, win_size_x, win_size_y, 5, new_id, true, win_draggable, win_sizable, true, false, title};
     window_list[new_id] = new_window;
     // Now all windows are not selected, draw ours.
     window_render(new_id);
@@ -207,7 +192,20 @@ void window_left() {
                     window_mover_selection = win_id;
                     mouse_start_x = mouse_position.pos_x;
                     mouse_start_y = mouse_position.pos_y;
+
+                    // Set a preview
+                    current_window_previewer.box_position_x = window_list[win_id].win_pos_x;
+                    current_window_previewer.box_position_y = window_list[win_id].win_pos_y;
+                    current_window_previewer.box_size_x = window_list[win_id].win_size_x;
+                    current_window_previewer.box_size_y = window_list[win_id].win_size_y;
+
+                    current_window_previewer.box_border_width = 3;
+                    current_window_previewer.box_color = 0xc;
+                    current_window_previewer.box_hasRendered = false; // set to false, as we started rendering
+
+                    preview_render();
                 } else {
+                    uint8_t selected = 0xff;
                     for (int id=0;id<31;id++) {
                         if (window_list[id].win_selected && id != win_id) {
                             window_list[id].win_selected = false;
@@ -215,10 +213,13 @@ void window_left() {
                             window_render(id);
                         }
                         if (!window_list[id].win_selected && id == win_id) {
-                            window_list[id].win_selected = true;
-                            window_erase(id);
-                            window_render(id);
+                            selected = id;
                         }
+                    }
+                    if (selected != 0xff) {
+                        window_list[selected].win_selected = true;
+                        window_erase(selected);
+                        window_render(selected);
                     }
                 }
                 break;
@@ -234,49 +235,6 @@ void window_left() {
     }
 }
 
-void mouse_mask_update() {
-    uint8_t m_scale_x = mouse_position.scale_x;
-    uint8_t m_scale_y = mouse_position.scale_y;
-    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + (8 * m_scale_x);x++) {
-        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + (11 * m_scale_y);y++) {
-            uint16_t cX = x - mouse_position.pos_x;
-            uint16_t cY = y - mouse_position.pos_y;
-            mouse_mask[((cY / m_scale_y) * 8) + (cX / m_scale_x)] = WORK_BUFF[(y * WIN_WIDTH) + x];
-        }
-    }
-}
-
-void mouse_mask_render() {
-    uint8_t m_scale_x = mouse_position.scale_x;
-    uint8_t m_scale_y = mouse_position.scale_y;
-    for (int x=mouse_position.pos_x;x<mouse_position.pos_x + (8 * m_scale_x);x++) {
-        for (int y=mouse_position.pos_y;y<mouse_position.pos_y + (11 * m_scale_y);y++) {
-            uint16_t cX = x - mouse_position.pos_x;
-            uint16_t cY = y - mouse_position.pos_y;
-            WORK_BUFF[(y * WIN_WIDTH) + x] = mouse_mask[((cY / m_scale_y) * 8) + (cX / m_scale_x)]; // 0xb0
-        }
-    }
-}
-
-void WIN_DrawMouse() {
-    // Fill the mouse mask before re-drawing over it
-    mouse_mask_update();
-    uint8_t m_scale_x = mouse_position.scale_x;
-    uint8_t m_scale_y = mouse_position.scale_y;
-    //WIN_FillRect(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + 8,mouse_position.pos_y + 11, 0xc);
-    for (int y = 0;y<(11 * m_scale_y);y++) {
-        for (int x = 0;x<(8 * m_scale_x);x++) {
-            uint16_t abs_pos_x = mouse_position.pos_x + x;
-            uint16_t abs_pos_y = mouse_position.pos_y + y;
-            uint8_t ptr = ((y / m_scale_y) * 8 + (x / m_scale_x)) / 4;
-            uint8_t shift = (3-((x / m_scale_x)%4))*2;
-            uint8_t digit = (mouse_sprite[ptr] & (3 << shift)) >> shift;
-            if (digit == 1) {
-                WORK_BUFF[abs_pos_y * WIN_WIDTH + abs_pos_x] = 0xf;
-            } else if (digit == 2) {
-                WORK_BUFF[abs_pos_y * WIN_WIDTH + abs_pos_x] = 0x0;
-            }
-        }
-    }
-    WIN_SwitchFrame(mouse_position.pos_x,mouse_position.pos_y,mouse_position.pos_x + (8 * m_scale_x),mouse_position.pos_y + (11 * m_scale_y));
-}
+// TODO
+// When moving a window, draw back any that were underneath it, before rendering it again.
+// Mover preview

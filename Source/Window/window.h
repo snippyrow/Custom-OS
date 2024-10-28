@@ -20,10 +20,21 @@ struct window_root {
     bool win_sizable;
     bool win_selected;
     bool win_active;
-    char title[64];
+    char* title;
+} __attribute__ ((packed));
+
+struct window_mover_preview {
+    uint16_t box_position_x;
+    uint16_t box_position_y;
+    uint16_t box_size_x;
+    uint16_t box_size_y;
+    uint16_t box_border_width;
+    uint8_t box_color;
+    bool box_hasRendered;
 } __attribute__ ((packed));
 
 window_root window_list[32];
+window_mover_preview current_window_previewer;
 
 uint8_t window_create();
 void windows_init();
@@ -32,3 +43,23 @@ void windows_init();
 void WIN_FillRect(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t color);
 void WIN_SwitchFrame(uint16_t boundx_0, uint16_t boundy_0, uint16_t boundx_1, uint16_t boundy_1);
 void WIN_DrawString(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, char* str, uint8_t color);
+
+
+uint16_t window_creation_offset_x;
+uint16_t window_creation_offset_y;
+
+uint16_t window_shadow_offset_x = 3;
+uint16_t window_shadow_offset_y = 3;
+
+uint16_t window_topbar_height = 30;
+uint16_t window_border_width = 3;
+
+uint8_t new_id;
+uint8_t new_preview_id;
+
+uint16_t window_bounding_width = 5;
+uint16_t desktop_padding = 5;
+
+uint8_t window_mover_selection = 0xff;
+
+uint8_t desktop_bg = 0xaf;

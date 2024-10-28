@@ -233,3 +233,14 @@ void shell_kbd_hook() {
         }
     }
 }
+
+void shell_mouse_en() {
+    if (shell_argtable[1][0] == '1') {
+        mouse_enabled = true;
+        shell_tty_print("\nEnabled the mouse");
+    } else {
+        mouse_enabled = false;
+        shell_tty_print("\nDisabled the mouse");
+    }
+    shell_memory_render();
+}

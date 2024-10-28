@@ -42,13 +42,14 @@ void shell_tty_print(char* string);
 void shell_memory_render();
 void shell_tty_clear();
 void shell_win_test();
-uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable);
+uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable, char* title);
 void window_left();
 void windows_init();
 
 void shell_div();
 void shell_help();
 void ata_test_device();
+void shell_mouse_en();
 
 bool shell_tty_enabled = true;
 
@@ -57,13 +58,14 @@ char commands[][2][128] = {
     {"CLEAR","Clear TTY"},
     {"DIV","(A) (B) Divide two numbers"},
     {"HELP","Get help on commands"},
-    {"HEXEDIT","(LBA) Reads the primary ATA device"}
+    {"HEXEDIT","(LBA) Reads the primary ATA device"},
+    {"MOUSE","(0/1) Enable/disable mouse"}
 };
 
 typedef void (*shell_ptr)();
 
 shell_ptr shell_handlers[] = {
-    shell_win_test, shell_tty_clear, shell_div, shell_help, ata_test_device
+    shell_win_test, shell_tty_clear, shell_div, shell_help, ata_test_device, shell_mouse_en
 };
 
 #endif  // End of include guard

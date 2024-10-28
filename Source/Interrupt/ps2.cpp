@@ -182,13 +182,13 @@ void mouse_handle() {
             mouse_position.button_middle_pressed = packet.button_middle;
             mouse_position.button_left_pressed = packet.button_left;
 
-            if (fire_right) {
+            if (fire_right && mouse_enabled) {
                 mouse_right_hook();
             }
-            if (fire_middle) {
+            if (fire_middle && mouse_enabled) {
                 mouse_middle_hook();
             }
-            if (fire_left) {
+            if (fire_left && mouse_enabled) {
                 mouse_left_hook();
             }
             fire_left = false;

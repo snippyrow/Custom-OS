@@ -43,8 +43,8 @@ void cli() {
 // Each block is 128 bytes long, and must be deallocated at once.
 
 uint8_t block_size = 128;
-uint16_t num_blocks = 512;
-uint8_t mem_table[512] = {0};
+uint16_t num_blocks = 1024;
+uint8_t mem_table[1024] = {0};
 // careful! Making it too large can cause an issue!
 // As it stands, a memory leak can cause the program to crash.
 // Another issue: freeing up memory cannot happen, due to each block being a sort of stack. Must be de-allocated at once!

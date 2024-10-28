@@ -73,7 +73,9 @@ void shell_win_test() {
     shell_tty_enabled = false;
     mouse_left_hook = window_left;
     windows_init();
-    uint8_t w_id = window_create(50,50,700,400,true,true);
-    uint8_t w_id2 = window_create(600,300,100,75,true,true);
+    uint8_t w_id = window_create(50,50,700,400,true,true,"Large Window");
+    uint8_t w_id2 = window_create(100,200,200,200,true,true,"Medium Test");
+    uint8_t w_id3 = window_create(600,300,100,75,true,true,"Small");
+    mouse_enabled = true;
     WIN_DrawMouse();
 }
