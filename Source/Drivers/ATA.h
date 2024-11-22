@@ -19,3 +19,7 @@
 #define ATA_SR_BSY 0x80    // Busy
 #define ATA_SR_DRDY 0x40    // Drive ready
 #define ATA_SR_DRQ 0x08    // Data request ready
+
+// PCI stuff
+#define PCI_CONFIG_ADDR    0xCF8
+#define PCI_CONFIG_DATA    0xCFC

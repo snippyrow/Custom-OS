@@ -20,8 +20,14 @@ struct window_root {
     bool win_sizable;
     bool win_selected;
     bool win_active;
-    char* title;
+    char* title; // pointer
+    uint8_t win_menu;
 } __attribute__ ((packed));
+
+// win_menu:
+// 00000000
+//      mMC
+// m: minimize, M: maximize, C: close
 
 struct window_mover_preview {
     uint16_t box_position_x;
@@ -43,6 +49,7 @@ void windows_init();
 void WIN_FillRect(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t color);
 void WIN_SwitchFrame(uint16_t boundx_0, uint16_t boundy_0, uint16_t boundx_1, uint16_t boundy_1);
 void WIN_DrawString(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, char* str, uint8_t color);
+void WIN_DrawChar(uint16_t x, uint16_t y, uint16_t xscale, uint16_t yscale, uint8_t character, uint8_t color, uint8_t bgcolor, bool clear);
 
 
 uint16_t window_creation_offset_x;
@@ -54,7 +61,7 @@ uint16_t window_shadow_offset_y = 3;
 uint16_t window_topbar_height = 30;
 uint16_t window_border_width = 3;
 
-uint8_t new_id;
+uint8_t num_windows;
 uint8_t new_preview_id;
 
 uint16_t window_bounding_width = 5;
@@ -63,3 +70,6 @@ uint16_t desktop_padding = 5;
 uint8_t window_mover_selection = 0xff;
 
 uint8_t desktop_bg = 0xaf;
+uint8_t window_root_bg = 0x1d; // window background (unless edited by user)
+uint8_t window_border_color = 0x18;
+uint8_t window_box_shadow = 0x11;

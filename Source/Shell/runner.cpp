@@ -72,10 +72,102 @@ void shell_win_test() {
     WIN_SwitchFrame_A();
     shell_tty_enabled = false;
     mouse_left_hook = window_left;
-    windows_init();
-    uint8_t w_id = window_create(50,50,700,400,true,true,"Large Window");
-    uint8_t w_id2 = window_create(100,200,200,200,true,true,"Medium Test");
-    uint8_t w_id3 = window_create(600,300,100,75,true,true,"Small");
+    mouse_move_hook = window_preview_mover;
+    //windows_init();
+    uint8_t w_id = window_create(50,50,700,400,true,true,"Large Window",0b000001);
+    uint8_t w_id2 = window_create(100,200,200,200,true,true,"Medium Test",0b000001);
+    uint8_t w_id3 = window_create(600,300,100,75,true,true,"Small",0b00000001);
     mouse_enabled = true;
     WIN_DrawMouse();
+}
+
+void shell_ata_enum() {
+    uint8_t count = 0;
+    if (strcmp(shell_argtable[1],"-m")) {
+        shell_tty_print("\nEnumerating ");
+        shell_tty_print(shell_argtable[2]);
+        shell_tty_print(" maximum ATA devices..\n");
+    } else {
+        return;
+    }
+    // Enumerate over ALL PCI devices
+    for (uint16_t bus = 0; bus < 256; bus++) {
+        for (uint8_t device = 0; device < 32; device++) {
+            for (uint8_t function = 0; function < 8; function++) {
+                uint32_t vendor_device = read_pci_config(bus, device, function, 0x00);
+                if ((vendor_device & 0xFFFF) != 0xFFFF) { // Check if device exists
+                    uint32_t class_code = read_pci_config(bus, device, function, 0x08);
+                    uint8_t base_class = (class_code >> 24) & 0xFF;
+                    uint8_t subclass = (class_code >> 16) & 0xFF;
+
+                    if (base_class == 0x01 && (subclass == 0x01 || subclass == 0x06)) { // IDE Controller
+                        // If found, print stuff
+
+                        count++;
+                        char* busln = uhex32_str(bus);
+                        char* devln = uhex32_str(device);
+                        char* fnln = uhex32_str(function);
+                        
+                        if (subclass == 0x1) {
+                            shell_tty_print("IDE Controller found:\n");
+                        } else if (subclass == 0x6) {
+                            shell_tty_print("SATA Controller found:\n");
+                        }
+                        shell_tty_print("\tBus: [0x");
+                        shell_tty_print(busln);
+                        shell_tty_print("]\n\tDevice: [0x");
+                        shell_tty_print(devln);
+                        shell_tty_print("]\n\tFunction: [0x");
+                        shell_tty_print(fnln);
+                        shell_tty_print("]\n");
+
+                        free(*busln, 32);
+                        free(*devln, 32);
+                        free(*fnln, 32);
+
+                        // Read BARs
+                        for (uint8_t bar_index = 0; bar_index < 6; bar_index++) {
+                            uint32_t bar = read_pci_config(bus, device, function, 0x10 + bar_index * 4);
+                            if (bar & 0x01) {
+                                // I/O BAR
+                                shell_tty_print("\tBAR");
+                                char* io_bar_index = int64_str(bar_index);
+                                char* io_bar = uhex32_str(bar & 0xFFFFFFFC);
+                                shell_tty_print(io_bar_index);
+                                shell_tty_print(" (I/O): [0x");
+                                shell_tty_print(io_bar);
+                                shell_tty_print("]\n");
+
+                                free(*io_bar_index, 32);
+                                free(*io_bar, 32);
+                            } else {
+                                // Memory BAR
+                                shell_tty_print("\tBAR");
+                                char* io_bar_index = int64_str(bar_index);
+                                char* io_bar = uhex32_str(bar & 0xFFFFFFFC);
+                                shell_tty_print(io_bar_index);
+                                shell_tty_print(" (Memory): [0x");
+                                shell_tty_print(io_bar);
+                                shell_tty_print("]\n");
+
+                                free(*io_bar_index, 32);
+                                free(*io_bar, 32);
+                            }
+                        }
+
+                        // Programming interface
+                        uint8_t prog_int = (read_pci_config(bus, device, function, 0x08) >> 8) & 0xFF;
+                        char* prog_int_ln = hex64_str(prog_int);
+                        shell_tty_print("\tProgramming Interface: [0x");
+                        shell_tty_print(prog_int_ln);
+                        shell_tty_print("]\n");
+
+                    }
+                }
+            }
+        }
+    }
+    if (!count) {
+        shell_tty_print("No avalible ATA devices found.\n");
+    }
 }

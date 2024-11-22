@@ -49,6 +49,7 @@ unsigned char *WORK_BUFF = (unsigned char *)0x100000; // start here, anything be
 
 uint16_t WIN_WIDTH;
 uint16_t WIN_HEIGHT;
+uint8_t WIN_BPP;
 
 uint8_t *WIN_FBUFF;
 

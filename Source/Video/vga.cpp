@@ -4,6 +4,7 @@ void init_buffer() {
     WIN_FBUFF = (unsigned char *)vbe_info -> framebuffer;
     WIN_WIDTH = vbe_info -> width;
     WIN_HEIGHT = vbe_info -> height;
+    WIN_BPP = vbe_info -> bpp;
     return;
 }
 

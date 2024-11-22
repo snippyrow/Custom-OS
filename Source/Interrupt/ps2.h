@@ -4,6 +4,7 @@ void (*mouse_hook)();
 void (*mouse_left_hook)();
 void (*mouse_middle_hook)();
 void (*mouse_right_hook)();
+void (*mouse_move_hook)();
 
 struct mouse_dapacket {
     uint8_t mov_x;
@@ -32,7 +33,9 @@ struct mouse_properties {
 
 // When a mouse is moved, the back needs to be re-rendered. This is supposed to do that.
 uint8_t mouse_mask[88];
-extern bool mouse_enabled = false;
+bool mouse_enabled = false;
+void shell_tty_print(char* string);
+void shell_memory_render();
 
 // each pixel only needs three combinations, so 00-11. Four pixels per byte, (6*6)*4 = 144
 // Sprite is 11x8, so

@@ -19,6 +19,17 @@ unsigned short inw(unsigned short port) {
     return ret;
 }
 
+void outl(uint16_t port, uint32_t value) {
+    asm volatile("outl %0, %1" : : "a"(value), "Nd"(port));
+}
+
+// Read from PCI configuration data port
+uint32_t inl(uint16_t port) {
+    uint32_t value;
+    asm volatile("inl %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
 void memcpy(int *source, int *dest, int nbytes) { // copy memory from A to B
     int i;
     for (i = 0; i < nbytes; i++) {
@@ -43,8 +54,8 @@ void cli() {
 // Each block is 128 bytes long, and must be deallocated at once.
 
 uint8_t block_size = 128;
-uint16_t num_blocks = 1024;
-uint8_t mem_table[1024] = {0};
+uint16_t num_blocks = 512;
+uint8_t mem_table[512] = {0};
 // careful! Making it too large can cause an issue!
 // As it stands, a memory leak can cause the program to crash.
 // Another issue: freeing up memory cannot happen, due to each block being a sort of stack. Must be de-allocated at once!
@@ -78,7 +89,7 @@ uint64_t malloc(uint32_t size_t) {
                         start_m = (start + i) % 8;
                         mem_table[start_s] |= (1 << start_m);
                     }
-                    return (0x01000000 + (start * block_size));
+                    return (0x1000000 + (start * block_size));
                 }
 
                 
@@ -195,6 +206,46 @@ char* hex64_str(signed long num) {
     return m_ptr;
 }
 
+char* uhex32_str(unsigned int num) {
+    char* m_ptr = (char*)malloc(32);
+    int m_i = 0;
+    int ix = 0;
+
+    // malloc failed, out of memory
+    if (m_ptr == nullptr) {
+        return 0;
+    }
+    // if the number is zero, easy
+    if (!num) {
+        m_ptr[0] = '0';
+        m_ptr[1] = '\0';
+        return m_ptr;
+    }
+    char tmp[32];
+    char code;
+    char additive;
+    while (num) {
+        code = num & 0xf;
+        if (code > 9) {
+            additive = 'a';
+            code = code - 10;
+        } else {
+            additive = '0';
+        }
+        tmp[m_i] = (code + additive);
+        num >>= 4;
+        m_i++;
+        ix++;
+    }
+    while (ix) {
+        m_ptr[m_i-ix] = tmp[ix-1];
+        ix--;
+    }
+    m_ptr[m_i] = '\0';
+    
+    return m_ptr;
+}
+
 // converts hex/dec to an integer. 
 long str_int64(char* a) {
     uint32_t i = 0;
@@ -253,8 +304,6 @@ void strcat_m(char* a, char* b) {
         tot++;
     }
     a[lenA+tot] = '\0';
-
-
 }
 
 // Split a string based on a given seperator. Modifies a table passed to it with the arguments, moderated by a maxsplit
@@ -342,4 +391,33 @@ bool rect_collide(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t p
     
     // Check if point (px, py) is within the rectangle bounds
     return (px >= x0 && px <= x1) && (py >= y0 && py <= y1);
+}
+
+bool rect_2_collide(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32_t x3, uint32_t y3) {
+    // Normalize the first rectangle's coordinates
+    if (x0 > x1) {
+        uint32_t temp = x0;
+        x0 = x1;
+        x1 = temp;
+    }
+    if (y0 > y1) {
+        uint32_t temp = y0;
+        y0 = y1;
+        y1 = temp;
+    }
+
+    // Normalize the second rectangle's coordinates
+    if (x2 > x3) {
+        uint32_t temp = x2;
+        x2 = x3;
+        x3 = temp;
+    }
+    if (y2 > y3) {
+        uint32_t temp = y2;
+        y2 = y3;
+        y3 = temp;
+    }
+
+    // Check if the rectangles overlap
+    return (x0 <= x3 && x1 >= x2) && (y0 <= y3 && y1 >= y2);   // H/V overlap
 }

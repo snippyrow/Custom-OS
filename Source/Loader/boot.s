@@ -9,33 +9,6 @@ jmp start
 
 %include "Source/Loader/mac.s"
 
-
-DAPACK:
-    db 0x10              ; Size of the DAP (16 bytes)
-    db 0                 ; Reserved (must be 0)
-blkcnt: 
-    dw 30                ; This will hold the number of blocks actually read/written
-db_add: 
-    dw 0x0000           ; Segment part of the destination address (0x60000 / 16)
-    dw 0x6000           ; Offset part of the destination address (0x60000 % 16)
-d_lba: 
-    dd 32                 ; LBA address to read
-    dd 0                 ; Additional storage for large LBA values (if needed)
-
-
-DAPACK_CODE:
-    db 0x10              ; Size of the DAP (16 bytes)
-    db 0                 ; Reserved (must be 0)
-blkcnt2: 
-    dw 63                ; This will hold the number of blocks actually read/written
-db_add2: 
-    dw 0x0000           ; Segment part of the destination address (0x60000 / 16)
-    dw KERNEL >> 4           ; Offset part of the destination address (0x60000 % 16)
-d_lba2: 
-    dd 1                 ; LBA address to read
-    dd 0                 ; Additional storage for large LBA values (if needed)
-
-
 start:
 
     print_str test_str

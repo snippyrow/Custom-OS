@@ -6,6 +6,8 @@
 #define SHELL_TTY_WIDTH 63
 #define SHELL_TTY_HEIGHT 38
 
+#define SHELL_TTY_FSIZE 2
+
 // Side padding
 #define SHELL_TTY_PADDING 4
 #define SHELL_MAX_ARGS 6
@@ -42,18 +44,26 @@ void shell_tty_print(char* string);
 void shell_memory_render();
 void shell_tty_clear();
 void shell_win_test();
-uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable, char* title);
+uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable, char* title, uint8_t context);
 void window_left();
 void windows_init();
 
+// Formal definitions of commands
 void shell_div();
 void shell_help();
 void ata_test_device();
 void shell_mouse_en();
+void shell_ata_enum();
+
+void window_preview_mover();
+
+uint32_t pci_config_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint32_t read_pci_config(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 bool shell_tty_enabled = true;
 
 char commands[][2][128] = {
+    {"ATA","[-m n] List workable ATA devices"},
     {"BOOT","Bring up boot manager"},
     {"CLEAR","Clear TTY"},
     {"DIV","(A) (B) Divide two numbers"},
@@ -65,9 +75,24 @@ char commands[][2][128] = {
 typedef void (*shell_ptr)();
 
 shell_ptr shell_handlers[] = {
-    shell_win_test, shell_tty_clear, shell_div, shell_help, ata_test_device, shell_mouse_en
+    shell_ata_enum, shell_win_test, shell_tty_clear, shell_div, shell_help, ata_test_device, shell_mouse_en
 };
+
+uint8_t shell_bg = 0x0;
+uint8_t shell_text_color = 0x2a;
 
 #endif  // End of include guard
 
 // TTY Resolution: 100x75 (scale 1, 8x8)
+
+/*
+Shell Themes:
+
+Classic Blue
+    bg   - 0xb0
+    text - 0xf
+
+Neo Orange
+    bg   - 0x0
+    text - 0x2a
+*/

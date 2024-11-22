@@ -11,7 +11,7 @@ uint16_t shell_tablen = 4;
 bool shell_kbd_enabled = true;
 uint8_t tg;
 
-char shell_prompt[] = "[root *]: ";
+char shell_prompt[] = "$ ";
 char shell_kbd_buffer[256];
 bool upper = false;
 
@@ -25,9 +25,9 @@ void shell_memory_render() {
         for (uint8_t y = 0;y<SHELL_TTY_HEIGHT;y++) {
             char character = SHELL_VideoMemory[x][y][0];
             if (character && !SHELL_VideoMemory[x][y][1]) {
-                uint16_t win_render_x = (x * 16) + SHELL_TTY_PADDING;
-                uint16_t win_render_y = (y * 20) + SHELL_TTY_PADDING;
-                WIN_DrawChar(win_render_x, win_render_y, 2, 2, character, 0xf, 0xb0, true);
+                uint16_t win_render_x = (x * 8 * SHELL_TTY_FSIZE) + SHELL_TTY_PADDING;
+                uint16_t win_render_y = (y * 10 * SHELL_TTY_FSIZE) + SHELL_TTY_PADDING;
+                WIN_DrawChar(win_render_x, win_render_y, SHELL_TTY_FSIZE, SHELL_TTY_FSIZE, character, shell_text_color, shell_bg, true);
                 SHELL_VideoMemory[x][y][1] = true;
                 WIN_SwitchFrame(win_render_x, win_render_y, win_render_x + 16, win_render_y + 20);
             }
@@ -160,33 +160,6 @@ void shell_enter_handler() {
     }
 
 }
-
-/*
-void shell_enter_handler() {
-    uint16_t numsplit = strsplit(shell_kbd_buffer, ' ', shell_argtable, SHELL_MAX_ARGS);
-    shell_tty_print("\n");
-    for (int i=0;i<=numsplit;i++) {
-        shell_tty_print("\"");
-        shell_tty_print(shell_argtable[i]);
-        shell_tty_print("\" ");
-    }
-
-    shell_tty_print("\n");
-
-    shell_tty_print(shell_prompt);
-
-    shell_memory_render();
-
-
-
-    // clear the keyboard buffer
-    for (int i=0;i<256;i++) {
-        shell_kbd_buffer[i] = '\0';
-    }
-
-    return;
-}
-*/
 
 // todo: add backspace, propper tab, enter handler, caps lock, basic argument and command reader
 

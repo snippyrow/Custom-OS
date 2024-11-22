@@ -32,3 +32,17 @@ void ATA_Read(uint32_t lba, uint8_t sectors, uint8_t *buffer) {
         ((uint16_t *)buffer)[i] = data;  // Read 16 bits at a time
     }
 }
+
+uint32_t pci_config_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
+    return (1 << 31) | // Enable bit
+           (bus << 16) |
+           (device << 11) |
+           (function << 8) |
+           (offset & 0xFC); // Offset must be 4-byte aligned
+}
+
+uint32_t read_pci_config(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
+    uint32_t address = pci_config_address(bus, device, function, offset);
+    outl(PCI_CONFIG_ADDR, address);
+    return inl(PCI_CONFIG_DATA);
+}

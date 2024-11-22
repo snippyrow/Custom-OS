@@ -8,7 +8,9 @@ void WIN_SwitchFrame(uint16_t boundx_0, uint16_t boundy_0, uint16_t boundx_1, ui
 void WIN_DrawMouse();
 
 int_queue_object int_queue[256];
-uint8_t int_queue_ptr = 0;
+mouse_dapacket packet;
+uint8_t mouse_packet[3];
+uint8_t mouse_dapack_cnt = 0;
 
 // When an interrupt for the PS/2 data bus, first check if there is nothing on the queue. If not, add it to the queue and call it. Afterwards remove it.
 
@@ -48,6 +50,8 @@ void mouse_write(unsigned char write) {
     outb(0x60, write);  // Send the data to the mouse
 }
 
+// How the mouse works:
+// Sends three IRQs, each containing one byte that we need. Three in all. After the three, assemble the packet and send it down to the handler.
 void initMouse() {
     uint8_t status;
     //Enable the interrupts
@@ -81,31 +85,23 @@ void initMouse() {
     mouse_right_hook = ps2_empty;
     mouse_middle_hook = ps2_empty;
     mouse_left_hook = ps2_empty;
+
+
+    mouse_move_hook = ps2_empty;
+
+    // Set sample rate for testing
+    outb(0xE8, 0x3);
+    mouse_wait_read();
+    mouse_read();
 }
 
-mouse_dapacket m_read() {
-    mouse_dapacket packet;
-    uint8_t mouse_bytes[3];
-    for (int i=0;i<3;i++) {
-        mouse_bytes[i] = inb(0x60);
-    }
-    packet.mov_x = mouse_bytes[1];
-    packet.mov_y = mouse_bytes[2];
-    packet.button_left = mouse_bytes[0] & 1;
-    packet.button_middle = mouse_bytes[0] & 4;
-    packet.button_right = mouse_bytes[0] & 2;
-
-    // populate flags
-    // (0) Button left (1) Button right (2) Button middle (3) 1 (4) X-Axis sign (5) Y-Axis sign (6) X-Axis Overflow (7) Y-Axis Overflow
-    packet.flags = mouse_bytes[0];
-    return packet;
-}
 
 // Primary mouse handler/driver. All rendering and movement is controlled by the driver, however buttons are hooked. Hover TBD.
-void mouse_handle() {
-    uint16_t start;
+// (0) Button left (1) Button right (2) Button middle (3) 1 (4) X-Axis sign (5) Y-Axis sign (6) X-Axis Overflow (7) Y-Axis Overflow
 
-    mouse_dapacket packet = m_read();
+void mouse_handle() {
+    // First, render the previous mask. After we handle all the events needed, we update the mouse mask before rendering the sprite.
+    uint16_t start;
     
     
     mouse_mask_render();
@@ -154,6 +150,7 @@ void mouse_handle() {
     }
     mouse_position.pos_x = newpos_x;
     mouse_position.pos_y = newpos_y;
+    mouse_move_hook();
     
     uint8_t combined = !(packet.mov_x & packet.mov_y & packet.flags);
 
@@ -195,11 +192,32 @@ void mouse_handle() {
             fire_middle = false;
             fire_right = false;
         }
+
     }
 
     WIN_DrawMouse();
 
-    /*
+    // To fix the mouse!
+    if (!mouse_enabled) {
+        return;
+    }
+    shell_tty_print("\n0b");
+    for (int x=7;x>=0;x--) {
+        if (packet.mov_x & (1 << x)) {
+            shell_tty_print("1");
+        } else {
+            shell_tty_print("0");
+        }
+    }
+    shell_tty_print("\n0b");
+    for (int x=7;x>=0;x--) {
+        if (packet.mov_y & (1 << x)) {
+            shell_tty_print("1");
+        } else {
+            shell_tty_print("0");
+        }
+    }
+    shell_tty_print("\n0b");
     for (int x=7;x>=0;x--) {
         if (packet.flags & (1 << x)) {
             shell_tty_print("1");
@@ -207,16 +225,34 @@ void mouse_handle() {
             shell_tty_print("0");
         }
     }
-    shell_tty_print("\n");
+    shell_tty_print("\n---------------");
     shell_memory_render();
-    */
     return;
+}
+
+void mouse_isr() {
+    uint8_t status = inb(0x64);
+    if (status & 0x20) { // Check if mouse data is available
+        mouse_packet[mouse_dapack_cnt++] = inb(0x60);
+        if (mouse_dapack_cnt == 3) {
+            mouse_dapack_cnt = 0; // Reset packet cycle
+            // Handle the packet (serialize into a neat format for ease of use)
+            packet.mov_x = mouse_packet[1];
+            packet.mov_y = mouse_packet[2];
+            packet.flags = mouse_packet[0];
+
+            packet.button_left = mouse_packet[0] & 1;
+            packet.button_middle = mouse_packet[0] & 4;
+            packet.button_right = mouse_packet[0] & 2;
+            mouse_handle();
+        }
+    }
 }
 
 void ps2_int_process(uint8_t id) {
     if (id) {
         // Data is from the mouse
-        mouse_handle();
+        mouse_isr();
         outb(0x20, 0x20); // EOI
         outb(0xa0, 0x20); // Second EOI for slave PIC
     } else {
