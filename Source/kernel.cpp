@@ -101,6 +101,12 @@ extern "C" void kmain() {
 // Get a good mouse cursor
 // Window move preview
 
+// NOTE:
+// Memory is getting pretty close now, be careful
+
+// Emergancy Todo before anything!
+// Find out why it wont boot on desktop
+
 /*
 The primary issue is that calling a frame switch too often can drop interrupts.
 Required changes:

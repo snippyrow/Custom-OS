@@ -20,6 +20,20 @@
 #define ATA_SR_DRDY 0x40    // Drive ready
 #define ATA_SR_DRQ 0x08    // Data request ready
 
+// ATA PCI Subclass names (from PCI classes & subclasses documentation)
+char ATA_SUBCLASSES[10][9] = {
+    "SCSI",
+    "IDE",
+    "FLOPPY",
+    "IPI BUS",
+    "RAID",
+    "ATA ADMA",
+    "SATA",
+    "SAS",
+    "ROM?",
+    "FLASH"
+};
+
 // PCI stuff
 #define PCI_CONFIG_ADDR    0xCF8
 #define PCI_CONFIG_DATA    0xCFC

@@ -16,6 +16,7 @@ char shell_kbd_buffer[256];
 bool upper = false;
 
 char SHELL_VideoMemory[SHELL_TTY_WIDTH][SHELL_TTY_HEIGHT][2];
+uint8_t numthemes = sizeof(devshell_themes)/sizeof(devshell_themes[0]);
 
 void shell_memory_render() {
     if (!shell_tty_enabled) {
@@ -203,6 +204,50 @@ void shell_kbd_hook() {
             strcat_m(shell_kbd_buffer,str);
             shell_tty_print(str);
             shell_memory_render();
+        }
+    }
+}
+
+// Re-draw entire screen
+void shell_newtheme() {
+    WIN_RenderClear(shell_bg);
+    for (uint8_t x = 0;x<SHELL_TTY_WIDTH;x++) {
+        for (uint8_t y = 0;y<SHELL_TTY_HEIGHT;y++) {
+            SHELL_VideoMemory[x][y][1] = false;
+        }
+    }
+    shell_memory_render();
+    WIN_SwitchFrame_A();
+}
+
+void shell_theme_set() {
+    if (strcmp(shell_argtable[1],"-l")) {
+        // list avalible themes
+        for (uint8_t t = 0;t<numthemes;t++) {
+            char* tnumln = int64_str(t + 1);
+            char* bgln = hex64_str(devshell_themes[t][0]);
+            char* txln = hex64_str(devshell_themes[t][1]);
+            shell_tty_print("\nTheme #");
+            shell_tty_print(tnumln);
+            shell_tty_print(":\n\t Background: [0x");
+            shell_tty_print(bgln);
+            shell_tty_print("]\n\t Textcolor: [0x");
+            shell_tty_print(txln);
+            shell_tty_print("]");
+
+            free(*tnumln, 32);
+            free(*bgln, 32);
+            free(*txln, 32);
+        }
+    } else {
+        uint8_t selected = str_int64(shell_argtable[1]);
+        if (selected >= (numthemes + 1) || selected <= 0) {
+            shell_tty_print("\nInvalid theme selected.");
+        } else {
+            selected--;
+            shell_bg = devshell_themes[selected][0];
+            shell_text_color = devshell_themes[selected][1];
+            shell_newtheme();
         }
     }
 }

@@ -6,7 +6,7 @@
 ; 0, 0, 2, 63, KERNEL
 %macro disk_read 6
     ; macro to read the primary drive to memory
-    ; (1) cylinder, (2) head, (3) start, (4) #num, (5) ES buffer pointer, (6) BX
+    ; (1) cylinder, (2) head, (3) sector start, (4) #num, (5) ES buffer pointer, (6) BX
 
     ; BX is the low nibble
     ; ES is the 16-bit value that makes a 20-bit address

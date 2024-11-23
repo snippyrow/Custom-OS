@@ -5,8 +5,6 @@ KERNEL equ 0x7e00
 
 ; Inclusions are from reference of compiler
 
-jmp start
-
 %include "Source/Loader/mac.s"
 
 start:
@@ -14,13 +12,15 @@ start:
     print_str test_str
     call disk_reset
 
-
     disk_read 0, 0, 2, 62, KERNEL >> 4, 0
-    disk_read 0, 0, 63, (63+41), 0x6000, 0
-    ; Special code to write the font into 0x60000
-    ; Should be forty sectors read
-    ; disk_read 0, 1, 1, 41, 0x6000, 0
+    disk_read 0, 0, 63, (63+41), 0x7000, 0
+    ;disk_read 0, 1, 17, 41, 0x7000, 0 ; <--
 
+    ; try reading using LBA (works on qemu, not real hardware..)
+    ; mov ah, 0x42             ; Extended read
+    ; mov dl, 0x80             ; Drive (0x80 = first HDD)
+    ; mov si, disk_packet      ; Address of the Disk Address Packet
+    ; int 0x13
 
 
     print_str success
@@ -131,7 +131,13 @@ mem_read_err:
     call p_start
 %endmacro
 
-
+disk_packet:
+    db 0x10              ; Packet size (16 bytes)
+    db 0x00              ; Reserved
+    dw 41                ; Number of sectors to read
+    dw 0x0000            ; Destination offset
+    dw 0x7000            ; Destination segment
+    dq 79                ; LBA address of the first sector
 
 times 510-($-$$) db 0
 dw 0xaa55

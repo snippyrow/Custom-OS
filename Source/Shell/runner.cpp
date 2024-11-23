@@ -81,9 +81,11 @@ void shell_win_test() {
     WIN_DrawMouse();
 }
 
+// Main ATA command. This is used to either set or enumerate serial ATA/ATA devices.
+
 void shell_ata_enum() {
     uint8_t count = 0;
-    if (strcmp(shell_argtable[1],"-m")) {
+    if (strcmp(shell_argtable[1],"-e")) {
         shell_tty_print("\nEnumerating ");
         shell_tty_print(shell_argtable[2]);
         shell_tty_print(" maximum ATA devices..\n");
@@ -100,18 +102,18 @@ void shell_ata_enum() {
                     uint8_t base_class = (class_code >> 24) & 0xFF;
                     uint8_t subclass = (class_code >> 16) & 0xFF;
 
-                    if (base_class == 0x01 && (subclass == 0x01 || subclass == 0x06)) { // IDE Controller
+                    if (base_class == 0x01) { // IDE Controller
                         // If found, print stuff
 
                         count++;
                         char* busln = uhex32_str(bus);
                         char* devln = uhex32_str(device);
                         char* fnln = uhex32_str(function);
-                        
-                        if (subclass == 0x1) {
-                            shell_tty_print("IDE Controller found:\n");
-                        } else if (subclass == 0x6) {
-                            shell_tty_print("SATA Controller found:\n");
+                        if (subclass >= 10) {
+                            shell_tty_print("Unknown Controller found:\n");
+                        } else {
+                            shell_tty_print(ATA_SUBCLASSES[subclass]);
+                            shell_tty_print(" Controller found:\n");
                         }
                         shell_tty_print("\tBus: [0x");
                         shell_tty_print(busln);
