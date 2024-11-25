@@ -55,6 +55,9 @@ void ata_test_device();
 void shell_mouse_en();
 void shell_ata_enum();
 void shell_theme_set();
+void fat_format();
+void shell_fat();
+void fat_list_files();
 
 void window_preview_mover();
 
@@ -63,29 +66,27 @@ uint32_t read_pci_config(uint8_t bus, uint8_t device, uint8_t function, uint8_t 
 
 bool shell_tty_enabled = true;
 
-char commands[10][2][128] = {
+char commands[][2][128] = {
     {"ATA","[-e uint] List workable ATA devices"},
     {"BOOT","Bring up boot manager"},
     {"CLEAR","Clear TTY"},
     {"DIV","[a int, b int] Divide two numbers"},
+    {"FAT","[-f, -ls]Testing for CFAT24"},
     {"HELP","Get help on commands"},
-    {"HEXEDIT","[lba uint] Reads the primary ATA device"},
     {"MOUSE","[0/1 bool] Enable/disable mouse"},
-    {"THEME","[-l, #num] List or set theme. Only if you're cool."}
+    {"THEME","[[-l, -m], #num, BG, TX] List, modify or set theme"}
 
 };
 
-typedef void (*shell_ptr)();
-
-shell_ptr shell_handlers[] = {
-    shell_ata_enum, shell_win_test, shell_tty_clear, shell_div, shell_help, ata_test_device, shell_mouse_en, shell_theme_set
+fn_ptr shell_handlers[] = {
+    shell_ata_enum, shell_win_test, shell_tty_clear, shell_div, shell_fat, shell_help, shell_mouse_en, shell_theme_set
 };
 
 uint8_t shell_bg = 0x0;
 uint8_t shell_text_color = 0x2a;
 
 // Background, textcolor
-uint8_t devshell_themes[3][2] = {
+uint8_t devshell_themes[5][2] = {
     {0xB0, 0x0F}, // classic blue
     {0x00, 0x2A}, // new orange
     {0x24, 0x0A} // ass.
@@ -94,15 +95,3 @@ uint8_t devshell_themes[3][2] = {
 #endif  // End of include guard
 
 // TTY Resolution: 100x75 (scale 1, 8x8)
-
-/*
-Shell Themes:
-
-Classic Blue
-    bg   - 0xb0
-    text - 0xf
-
-Neo Orange
-    bg   - 0x0
-    text - 0x2a
-*/

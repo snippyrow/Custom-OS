@@ -5,6 +5,11 @@ void outb(short Port, char Value){
     asm volatile("outb %1, %0" : : "dN" (Port), "a" (Value));
 }
 
+void outw(short Port, short Value) {
+    asm volatile("outw %1, %0" : : "dN" (Port), "a" (Value));
+}
+
+
 
 // Get input for a specified I/O port, 8 bits
 unsigned char inb(unsigned short port) {
@@ -30,12 +35,14 @@ uint32_t inl(uint16_t port) {
     return value;
 }
 
-void memcpy(int *source, int *dest, int nbytes) { // copy memory from A to B
-    int i;
-    for (i = 0; i < nbytes; i++) {
-        *(dest + i) = *(source + i);
+void memcpy(void *dest, const void *source, uint32_t nbytes) {
+    unsigned char *d = (unsigned char *)dest; // Treat as byte pointers
+    const unsigned char *s = (const unsigned char *)source;
+    for (uint32_t i = 0; i < nbytes; i++) {
+        d[i] = s[i]; // Copy each byte
     }
 }
+
 
 void sti() {
     asm volatile("sti");

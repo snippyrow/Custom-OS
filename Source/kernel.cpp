@@ -77,6 +77,8 @@ extern "C" void kmain() {
 
     sti();
 
+    
+
 
     return;
 }
@@ -96,6 +98,7 @@ extern "C" void kmain() {
 // Boot sequence:
 // use a command to list bootable addresses, then boot into that address with another command (or alias)
 // For this purpose use a good ATA driver
+// 
 
 // Window todo:
 // Get a good mouse cursor

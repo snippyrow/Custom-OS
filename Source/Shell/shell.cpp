@@ -14,9 +14,9 @@ uint8_t tg;
 char shell_prompt[] = "$ ";
 char shell_kbd_buffer[256];
 bool upper = false;
+uint8_t numthemes = sizeof(devshell_themes)/sizeof(devshell_themes[0]);
 
 char SHELL_VideoMemory[SHELL_TTY_WIDTH][SHELL_TTY_HEIGHT][2];
-uint8_t numthemes = sizeof(devshell_themes)/sizeof(devshell_themes[0]);
 
 void shell_memory_render() {
     if (!shell_tty_enabled) {
@@ -239,6 +239,19 @@ void shell_theme_set() {
             free(*bgln, 32);
             free(*txln, 32);
         }
+    } else if (strcmp(shell_argtable[1],"-m")) {
+        uint8_t themeid = str_int64(shell_argtable[2]);
+        if (themeid <= 0 || themeid > numthemes) {
+            shell_tty_print("\nInvalid theme selected.");
+        } else {
+            uint8_t bgcolor = str_int64(shell_argtable[3]);
+            uint8_t textcolor = str_int64(shell_argtable[4]);
+            devshell_themes[themeid-1][0] = bgcolor;
+            devshell_themes[themeid-1][1] = textcolor;
+            shell_tty_print("\nCreated theme #");
+            shell_tty_print(int64_str(themeid));
+        }
+        
     } else {
         uint8_t selected = str_int64(shell_argtable[1]);
         if (selected >= (numthemes + 1) || selected <= 0) {

@@ -4,6 +4,7 @@
 KERNEL equ 0x7e00
 
 ; Inclusions are from reference of compiler
+; Reminder: using bios to read the disk is all fucked up on the desktop, use a builtin driver
 
 %include "Source/Loader/mac.s"
 
@@ -12,8 +13,9 @@ start:
     print_str test_str
     call disk_reset
 
-    disk_read 0, 0, 2, 62, KERNEL >> 4, 0
-    disk_read 0, 0, 63, (63+41), 0x7000, 0
+    disk_read 0, 0, 22, 70, KERNEL >> 4, 0
+    ; disk_read 0, 0, 63, (63+41), 0x7000, 0 ; (THIS WORKS FOR REAL HARDWARE!!!)
+    disk_read 0, 1, 37, 41, 0x7000, 0
     ;disk_read 0, 1, 17, 41, 0x7000, 0 ; <--
 
     ; try reading using LBA (works on qemu, not real hardware..)
@@ -141,6 +143,12 @@ disk_packet:
 
 times 510-($-$$) db 0
 dw 0xaa55
+
+;
+FAT:
+    resb 128
+
+
 
 
 ; TODO List

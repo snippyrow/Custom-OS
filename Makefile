@@ -3,7 +3,7 @@ CFLAGS = -ffreestanding -g -m32
 all: asm link run
 
 asm:
-	nasm -felf32 "Source/Loader/boot.s" -f bin -o "Binaries/boot.bin"
+	nasm -felf32 "Source/Loader/boot.s" -f bin -o "Binaries/primary.bin"
 	#nasm -felf32 "Source/Loader/extboot.s" -f bin -o "Binaries/extboot.bin"
 
 	#cat "Binaries/boot.bin" "Binaries/extboot.bin" > "Binaries/primary.bin"
@@ -18,12 +18,12 @@ link:
 
 run:
 	dd if=Binaries/primary.bin of=main.img bs=512 count=63
-	dd if=Binaries/full.bin of=main.img bs=512 seek=2
+	dd if=Binaries/full.bin of=main.img bs=512 seek=22
 
-	# Super important to append font, used for debugging! (should be seek 63)
-	dd if=Assets/font_n.bin of=main.img bs=512 seek=63
+	# Super important to append font, used for debugging! (should be seek 80)
+	dd if=Assets/font_n.bin of=main.img bs=512 seek=100
 
-	dd if=/dev/zero bs=1 count=99999 >> main.img
+	dd if=/dev/zero bs=1 count=200000 >> main.img
 
 
 	qemu-system-x86_64 \

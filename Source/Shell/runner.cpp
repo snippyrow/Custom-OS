@@ -1,5 +1,6 @@
 #include "shell.h"
 #include "../Drivers/ATA.cpp"
+#include "../FAT/cfat24.cpp"
 
 // Pointers for ATA functions..
 void ATA_Read(uint32_t lba, uint8_t sectors, uint8_t *buffer);
@@ -30,9 +31,9 @@ void shell_help() {
     shell_memory_render();
 }
 
-void ata_test_device() {
+void ata_shell_print(uint32_t lba) {
     uint8_t* ata_read_table = (uint8_t*)malloc(512);
-    uint32_t ata_read_lba = str_int64(shell_argtable[1]);
+    uint32_t ata_read_lba = lba;
     ATA_Read(ata_read_lba,1,ata_read_table);
     uint8_t tnum;
 
@@ -85,10 +86,22 @@ void shell_win_test() {
 
 void shell_ata_enum() {
     uint8_t count = 0;
+    uint8_t enumen = 0;
     if (strcmp(shell_argtable[1],"-e")) {
         shell_tty_print("\nEnumerating ");
         shell_tty_print(shell_argtable[2]);
         shell_tty_print(" maximum ATA devices..\n");
+        enumen = 0xff; // makeshift enable
+    } else if (strcmp(shell_argtable[1],"-w")) {
+        uint8_t* w_table = (uint8_t*)malloc(512);
+        for (uint8_t x = 0;x<0xff;x++) {
+            w_table[x] = x;
+        }
+        ATA_Write(str_int64(shell_argtable[2]), 1, w_table);
+        return;
+    } else if (strcmp(shell_argtable[1],"-r")) {
+        ata_shell_print(str_int64(shell_argtable[2]));
+        return;
     } else {
         return;
     }
@@ -171,5 +184,14 @@ void shell_ata_enum() {
     }
     if (!count) {
         shell_tty_print("No avalible ATA devices found.\n");
+    }
+}
+
+void shell_fat() {
+    if (strcmp(shell_argtable[1],"-f")) {
+        fat_format();
+        shell_tty_print("\nFormatted partition to CFAT24.");
+    } else if (strcmp(shell_argtable[1],"-ls")) {
+        fat_list_files();
     }
 }

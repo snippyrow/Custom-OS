@@ -14,6 +14,8 @@
 
 // ATA commands
 #define ATA_CMD_READ_SECTORS 0x20    // Read with retries
+#define ATA_CMD_WRITE_SECTORS 0x30
+#define ATA_CMD_CACHE_FLUSH 0xE7
 
 // Status flags
 #define ATA_SR_BSY 0x80    // Busy
