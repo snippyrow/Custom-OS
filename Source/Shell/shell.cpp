@@ -11,7 +11,7 @@ uint16_t shell_tablen = 4;
 bool shell_kbd_enabled = true;
 uint8_t tg;
 
-char shell_prompt[] = "$ ";
+char root_prompt[] = "/ ";
 char shell_kbd_buffer[256];
 bool upper = false;
 uint8_t numthemes = sizeof(devshell_themes)/sizeof(devshell_themes[0]);
@@ -144,8 +144,9 @@ void shell_enter_handler() {
     }
 
     free(*uppercmd, strlen(uppercmd)+2);
-    shell_tty_print("\n");
-    shell_tty_print(shell_prompt);
+    shell_tty_print("\n/");
+    shell_tty_print(shell_dir_name);
+    shell_tty_print("/ ");
     shell_memory_render();
 
 
@@ -159,7 +160,6 @@ void shell_enter_handler() {
             shell_argtable[arg][c] = '\0';
         }
     }
-
 }
 
 // todo: add backspace, propper tab, enter handler, caps lock, basic argument and command reader

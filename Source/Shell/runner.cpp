@@ -1,9 +1,9 @@
 #include "shell.h"
 #include "../Drivers/ATA.cpp"
-#include "../FAT/cfat24.cpp"
+#include "../FAT/cfat32.cpp"
 
 // Pointers for ATA functions..
-void ATA_Read(uint32_t lba, uint8_t sectors, uint8_t *buffer);
+void ATA_Read(uint32_t lba, uint16_t num_sectors, uint8_t *buffer);
 void free(uint64_t ptr, uint32_t size_t);
 uint64_t malloc(uint32_t size_t);
 
@@ -187,11 +187,84 @@ void shell_ata_enum() {
     }
 }
 
-void shell_fat() {
+void shell_format() {
     if (strcmp(shell_argtable[1],"-f")) {
-        fat_format();
-        shell_tty_print("\nFormatted partition to CFAT24.");
-    } else if (strcmp(shell_argtable[1],"-ls")) {
-        fat_list_files();
+        fat_format(str_int64(shell_argtable[2]));
+        shell_tty_print("\nFormatted partition to CFAT32.");
+    } else if (strcmp(shell_argtable[1],"-s")) {
+        uint32_t fid = fat_search();
+        shell_tty_print("\nFirst found: 0x");
+        shell_tty_print(uhex32_str(fid));
+    } else if (strcmp(shell_argtable[1],"-next")) {
+        uint32_t num = fat_search();
+        char* str = uhex32_str(num);
+        shell_tty_print("\n0x");
+        shell_tty_print(str);
+        free(*str, 32);
+    } else if (strcmp(shell_argtable[1],"-ret")) {
+        uint32_t num = fat_ret_next(str_int64(shell_argtable[2]));
+        char* str = uhex32_str(num);
+        shell_tty_print("\n0x");
+        shell_tty_print(str);
+        free(*str, 32);
+    } else if (strcmp(shell_argtable[1],"-upd")) {
+        fat_update(str_int64(shell_argtable[2]), str_int64(shell_argtable[3]));
+    } else if (strcmp(shell_argtable[1],"-back")) {
+        shell_operating_dir = 0;
+        shell_dir_name[0] = 0;
     }
+}
+
+void shell_cd() {
+    uint32_t cc = fat_dir_search(0, shell_argtable[1], 2);
+    if (cc) {
+        shell_operating_dir = cc;
+        // copy directory name to the shell
+        for (uint8_t i=0;i<9;i++) {
+            shell_dir_name[i] = shell_argtable[1][i];
+        }
+    }
+}
+
+void shell_ls() {
+    fat_list_files(shell_operating_dir);
+}
+
+void shell_mko(uint8_t attrib) {
+    fat_object ex_file = {
+        "",
+        "",
+        attrib,
+        0,
+        0,
+        0,
+        36,
+        0 // Directory structure + FAT usage
+    };
+    // copy name and extension
+    uint8_t f = 0;
+    while (shell_argtable[1][f]) {
+        ex_file.o_name[f] = shell_argtable[1][f];
+        f++;
+    }
+    ex_file.o_name[f] = '\0';
+
+    f = 0;
+    while (shell_argtable[2][f]) {
+        ex_file.o_ext[f] = shell_argtable[2][f];
+        f++;
+    }
+    ex_file.o_ext[f] = '\0';
+    int code = fat_mko(ex_file, shell_operating_dir);
+    if (code == -1) {
+        shell_tty_print("\nError creating object");
+    }
+}
+
+void shell_mkfile() {
+    shell_mko(1); // file
+}
+
+void shell_mkdir() {
+    shell_mko(2); // directory
 }

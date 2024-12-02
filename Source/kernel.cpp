@@ -66,9 +66,11 @@ extern "C" void kmain() {
     shell_tty_print(res_y);
     shell_tty_print(" (");
     shell_tty_print(res_bpp);
-    shell_tty_print(" bits per pixel)");
-    shell_tty_print("\nType 'help' for a list of commands.\n");
-    shell_tty_print(shell_prompt);
+    shell_tty_print(" bits per pixel)\n");
+    shell_tty_print("Currently running a CFAT32 partition.");
+    shell_tty_print("\nType 'help' for a list of commands.\n/");
+    shell_tty_print(shell_dir_name);
+    shell_tty_print("/ ");
     shell_memory_render();
 
     free(*res_x,32);

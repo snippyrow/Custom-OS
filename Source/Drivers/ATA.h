@@ -17,6 +17,8 @@
 #define ATA_CMD_WRITE_SECTORS 0x30
 #define ATA_CMD_CACHE_FLUSH 0xE7
 
+#define ATA_REG_ALTSTATUS  0x0C
+
 // Status flags
 #define ATA_SR_BSY 0x80    // Busy
 #define ATA_SR_DRDY 0x40    // Drive ready

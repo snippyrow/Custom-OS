@@ -13,7 +13,7 @@ start:
     print_str test_str
     call disk_reset
 
-    disk_read 0, 0, 22, 70, KERNEL >> 4, 0
+    disk_read 0, 0, 22, 80, KERNEL >> 4, 0
     ; disk_read 0, 0, 63, (63+41), 0x7000, 0 ; (THIS WORKS FOR REAL HARDWARE!!!)
     disk_read 0, 1, 37, 41, 0x7000, 0
     ;disk_read 0, 1, 17, 41, 0x7000, 0 ; <--

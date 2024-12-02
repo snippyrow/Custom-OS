@@ -56,8 +56,12 @@ void shell_mouse_en();
 void shell_ata_enum();
 void shell_theme_set();
 void fat_format();
-void shell_fat();
+void shell_format();
 void fat_list_files();
+void shell_cd();
+void shell_ls();
+void shell_mkfile();
+void shell_mkdir();
 
 void window_preview_mover();
 
@@ -69,17 +73,21 @@ bool shell_tty_enabled = true;
 char commands[][2][128] = {
     {"ATA","[-e uint] List workable ATA devices"},
     {"BOOT","Bring up boot manager"},
+    {"CD","Change Directory"},
     {"CLEAR","Clear TTY"},
     {"DIV","[a int, b int] Divide two numbers"},
-    {"FAT","[-f, -ls]Testing for CFAT24"},
+    {"FORMAT","[-f clusters, -s, -next, -ret, -upd, -back]\nLow-level CFAT32 operations\n"},
     {"HELP","Get help on commands"},
+    {"LS","List objects in directory"},
+    {"MKDIR","[name] Create a subdirectory inside existing directory"},
+    {"MKFILE","[name ext] Create a file in current directory"},
     {"MOUSE","[0/1 bool] Enable/disable mouse"},
     {"THEME","[[-l, -m], #num, BG, TX] List, modify or set theme"}
 
 };
 
 fn_ptr shell_handlers[] = {
-    shell_ata_enum, shell_win_test, shell_tty_clear, shell_div, shell_fat, shell_help, shell_mouse_en, shell_theme_set
+    shell_ata_enum, shell_win_test, shell_cd, shell_tty_clear, shell_div, shell_format, shell_help, shell_ls, shell_mkdir, shell_mkfile, shell_mouse_en, shell_theme_set
 };
 
 uint8_t shell_bg = 0x0;
@@ -91,6 +99,10 @@ uint8_t devshell_themes[5][2] = {
     {0x00, 0x2A}, // new orange
     {0x24, 0x0A} // ass.
 };
+
+// ALlows the shell to act "locally" in a directory
+uint32_t shell_operating_dir = 0;
+char shell_dir_name[9] = "";
 
 #endif  // End of include guard
 
