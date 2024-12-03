@@ -20,6 +20,11 @@
 
 // Just below the FAT offset, there is a table
 
+// In order to travel up to a parent directory, we find where we just came from and go there, since that's saved to memory.
+// If we need to go up twice, each directory has the cluster start of it's parent.
+
+// Inside a user directory, there is a special type of object called a navigator. It links up with info towards the parent directory struct.
+
 // FAT Object Attributes:
 // 0x00 - Empty
 // 0x01 - User File
@@ -53,6 +58,8 @@ void fat_list_files(uint32_t dir_entry) { // dir_entry is the starting cluster o
     uint32_t cdir = dir_entry;
     uint32_t FAT_Size = FAT_Length / 128; // in sectors of the disk
     uint32_t fcount = 0;
+    char oname[9];
+    char oext[4];
     fat_object object;
     fat_object* ata_buffer = (fat_object*)malloc(512); // this works??
     while (nextFound) {
@@ -65,11 +72,15 @@ void fat_list_files(uint32_t dir_entry) { // dir_entry is the starting cluster o
                 case 0:
                     break; // no file exists here
                 case 1: {
+                    memcpy(oname, &object.o_name, 8);
+                    oname[8] = '\0';
+                    memcpy(oext, &object.o_ext, 3);
+                    oext[3] = '\0';
                     char* fsize = int64_str(object.o_size);
                     shell_tty_print("\n\t");
-                    shell_tty_print(object.o_name);
+                    shell_tty_print(oname);
                     shell_tty_print(".");
-                    shell_tty_print(object.o_ext);
+                    shell_tty_print(oext);
                     shell_tty_print(" (");
                     shell_tty_print(fsize);
                     shell_tty_print("B)");
@@ -79,15 +90,20 @@ void fat_list_files(uint32_t dir_entry) { // dir_entry is the starting cluster o
                 }
                     // Regular user file
                 case 2: {
+                    memcpy(oname, &object.o_name, 8);
+                    oname[8] = '\0';
                     char* fsize = int64_str(object.o_size);
                     shell_tty_print("\n\t--> /");
-                    shell_tty_print(object.o_name);
+                    shell_tty_print(oname);
                     shell_tty_print("/ (");
                     shell_tty_print(fsize);
                     shell_tty_print("B)");
                     free(*fsize, 32);
                     fcount++;
                     break;
+                }
+                case 0x80: {
+                    shell_tty_print("\n\t../");
                 }
                     // Regular user directory
                 default:
@@ -182,12 +198,15 @@ int fat_mko(fat_object new_o, uint32_t dir_entry) {
 
         // Now we actually make our file
         // If this is a new block we can insert at the first position and end
-        data_avalible = fat_search();
-        if (data_avalible == EOC) {
-            free((uint64_t)dir_sector, 512);
-            return -1; // failed since no space
+        if (new_o.attributes != 0x80) {
+            data_avalible = fat_search();
+            if (data_avalible == EOC) {
+                free((uint64_t)dir_sector, 512);
+                return -1; // failed since no space
+            }
+            // If this is a navigator class, then this acts as the parent directory to save space
+            new_o.cluster = data_avalible;
         }
-        new_o.cluster = data_avalible;
         if (newBlock) {
             // First clear the buffer to rid it of residual (since no initial read)
             for (uint16_t x=0;x<512;x++) {
@@ -211,23 +230,25 @@ int fat_mko(fat_object new_o, uint32_t dir_entry) {
                 1,
                 dir_ptr
             );
-            fat_update(data_avalible, EOC);
+            if (new_o.attributes != 0x80) {
+                fat_update(data_avalible, EOC);
 
-            // Kindly erase the first sector just in case
-            for (uint16_t c=0;c<512;c++) {
-                dir_ptr[c] = 0;
+                // Kindly erase the first sector just in case
+                for (uint16_t c=0;c<512;c++) {
+                    dir_ptr[c] = 0;
+                }
+                ATA_Write(FAT_Offset + FAT_Size + data_avalible, 1, dir_ptr);
             }
-            ATA_Write(FAT_Offset + FAT_Size + data_avalible, 1, dir_ptr);
             free((uint64_t)dir_sector, 512);
 
-            return 0; // finished
+            return data_avalible; // finished
         }
     }
     free((uint64_t)dir_sector, 512);
     return -1;
 }
 
-uint32_t fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib) {
+int fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib, bool upd = false) {
     // Find first occouring object based on params
     fat_object* dir_sector = (fat_object*)malloc(512);
     uint8_t* dir_ptr = (uint8_t*)dir_sector; // used for ATA buffering
@@ -254,19 +275,90 @@ uint32_t fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib) {
             } else {
                 // No more to be found
                 free((uint64_t)dir_sector, 512);
-                return 0;
+                return -1;
             }
         }
-        // SInce attribute is cheaper, compare that first
+        // Since attribute is cheaper, compare that first
         uint8_t o_index = directory_index % 16;
         if (dir_sector[o_index].attributes == attrib) {
-            if (strcmp(dir_sector[o_index].o_name, oname)) {
+            if (strcmp(dir_sector[o_index].o_name, oname) || attrib == 0x80) { // if name matches OR we need to find the navigator for a directory
                 free((uint64_t)dir_sector, 512);
+                if (upd) {
+                    memcpy(&fat_cd_object, &dir_sector[o_index], 32);
+                }
                 return dir_sector[o_index].cluster;
             }
         }
     }
     free((uint64_t)dir_sector, 512);
+    return -1;
+}
+
+
+// Re-writes file contents
+int fat_file_touch(uint32_t file_start, uint8_t* data_begin, uint32_t size_t) {
+    uint8_t* buffer = (uint8_t*)malloc(512);
+    uint32_t c_chunk = file_start;
+    uint32_t FAT_Size = FAT_Length / 128; // in sectors of the disk
+    uint32_t lba = FAT_Offset + FAT_Size + c_chunk;
+    uint32_t next;
+    bool end = true;
+    for (uint32_t i=0;i<size_t;i++) {
+        uint16_t index = i % 512;
+        buffer[index] = data_begin[i];
+        if (index == 0 && i != 0) {
+            ATA_Write(
+                lba,
+                1,
+                buffer
+            );
+            next = fat_ret_next(c_chunk);
+            if (next != EOC) {
+                c_chunk = next;
+                lba = FAT_Offset + FAT_Size + c_chunk;
+                end = false;
+            } else {
+                // expand the file as needed
+                next = fat_search();
+                if (next == EOC) {
+                    free(*buffer, 512);
+                    return -1; // failed to find space in volume
+                }
+                fat_update(c_chunk, next);
+                fat_update(next, EOC);
+                c_chunk = next;
+                lba = FAT_Offset + FAT_Size + c_chunk;
+                end = true;
+            }
+        }
+    }
+
+    // Pad the rest of the remaining cluster with zero
+    uint16_t remaining = size_t % 512;
+    for (uint16_t i=remaining;i<512;i++) {
+        buffer[i] = 0;
+    }
+
+    ATA_Write(
+        lba,
+        1,
+        buffer
+    );
+
+    // Reduce file if we have now unused clusters. Deallocate all
+    bool pruning = !end;
+    while (pruning) {
+        next = fat_ret_next(c_chunk);
+        // read the first next from the writing function
+        if (next == EOC) {
+            free(*buffer, 512);
+            return 0;
+        } else {
+            fat_update(next, NONE);
+            c_chunk = next;
+        }
+    }
+    free(*buffer, 512);
     return 0;
 }
 
@@ -286,8 +378,10 @@ void fat_format(uint32_t fat_length) {
     }
     ATA_Write(FAT_Offset, FAT_Size, (uint8_t*)ata_buffer); // apply changes to disk
     starter = {"home", "", 2, 0, 0, 0, 0, 0}; // empty home directory
-    fat_mko(starter, 0);
-    starter = {"README", "txt", 1, 0, 0, 0, 169, 0}; // empty home directory
+    uint32_t home_place = fat_mko(starter, 0);
+    starter = {"", "", 0x80, 0, 0, 0, 0, 0}; // navigator to root
+    fat_mko(starter, home_place);
+    starter = {"README", {'t','x','t'}, 1, 0, 0, 0, 169, 0}; // empty home directory
     fat_mko(starter, 0);
     free(*ata_buffer, FAT_Size * 512);
 }

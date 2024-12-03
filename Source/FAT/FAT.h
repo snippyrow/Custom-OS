@@ -1,13 +1,15 @@
 struct fat_object {
-    char o_name[9];
-    char o_ext[4];
+    char o_name[8];
+    char o_ext[3];
     uint8_t attributes;
     uint32_t cluster; // The cluster the file starts at, so the next can be found
     uint32_t modified;
     uint32_t created;
     uint32_t o_size;
-    uint16_t always0;
+    uint32_t parent_cluster;
 } __attribute__ ((packed));
+
+fat_object fat_cd_object;
 
 struct fat_object* presup_object;
 uint16_t FAT_Offset = 200;

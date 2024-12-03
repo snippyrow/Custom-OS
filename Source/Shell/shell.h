@@ -62,6 +62,7 @@ void shell_cd();
 void shell_ls();
 void shell_mkfile();
 void shell_mkdir();
+void shell_touch();
 
 void window_preview_mover();
 
@@ -82,12 +83,13 @@ char commands[][2][128] = {
     {"MKDIR","[name] Create a subdirectory inside existing directory"},
     {"MKFILE","[name ext] Create a file in current directory"},
     {"MOUSE","[0/1 bool] Enable/disable mouse"},
-    {"THEME","[[-l, -m], #num, BG, TX] List, modify or set theme"}
+    {"THEME","[[-l, -m], #num, BG, TX] List, modify or set theme"},
+    {"TOUCH","[name, content] Modify file contents"}
 
 };
 
 fn_ptr shell_handlers[] = {
-    shell_ata_enum, shell_win_test, shell_cd, shell_tty_clear, shell_div, shell_format, shell_help, shell_ls, shell_mkdir, shell_mkfile, shell_mouse_en, shell_theme_set
+    shell_ata_enum, shell_win_test, shell_cd, shell_tty_clear, shell_div, shell_format, shell_help, shell_ls, shell_mkdir, shell_mkfile, shell_mouse_en, shell_theme_set, shell_touch
 };
 
 uint8_t shell_bg = 0x0;

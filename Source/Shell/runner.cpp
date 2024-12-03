@@ -216,12 +216,25 @@ void shell_format() {
 }
 
 void shell_cd() {
-    uint32_t cc = fat_dir_search(0, shell_argtable[1], 2);
-    if (cc) {
-        shell_operating_dir = cc;
-        // copy directory name to the shell
-        for (uint8_t i=0;i<9;i++) {
-            shell_dir_name[i] = shell_argtable[1][i];
+    if (strcmp(shell_argtable[1], "../")) {
+        uint32_t cc = fat_dir_search(shell_operating_dir, "", 0x80, true);
+        if (cc != -1) {
+            shell_operating_dir = cc; // acts as a parent
+            shell_tty_print(uhex32_str(cc));
+            // copy directory name to the shell
+            memcpy(&shell_dir_name, &fat_cd_object.o_name, 8);
+            shell_dir_name[8] = '\0';
+        }
+
+    } else {
+        uint32_t cc = fat_dir_search(shell_operating_dir, shell_argtable[1], 2, true);
+        if (cc != -1) {
+            shell_operating_dir = cc;
+            // copy directory name to the shell
+            for (uint8_t i=0;i<8;i++) {
+                shell_dir_name[i] = shell_argtable[1][i];
+            }
+            shell_dir_name[8] = '\0';
         }
     }
 }
@@ -230,7 +243,7 @@ void shell_ls() {
     fat_list_files(shell_operating_dir);
 }
 
-void shell_mko(uint8_t attrib) {
+uint32_t shell_mko(uint8_t attrib) {
     fat_object ex_file = {
         "",
         "",
@@ -243,21 +256,22 @@ void shell_mko(uint8_t attrib) {
     };
     // copy name and extension
     uint8_t f = 0;
-    while (shell_argtable[1][f]) {
+    while (shell_argtable[1][f] && f < 8) {
         ex_file.o_name[f] = shell_argtable[1][f];
         f++;
     }
-    ex_file.o_name[f] = '\0';
 
     f = 0;
-    while (shell_argtable[2][f]) {
+    while (shell_argtable[2][f] && f < 3) {
         ex_file.o_ext[f] = shell_argtable[2][f];
         f++;
     }
-    ex_file.o_ext[f] = '\0';
     int code = fat_mko(ex_file, shell_operating_dir);
     if (code == -1) {
         shell_tty_print("\nError creating object");
+    }
+    if (attrib == 2) {
+        return code; // returns result placement of directory, for use of navigator
     }
 }
 
@@ -266,5 +280,28 @@ void shell_mkfile() {
 }
 
 void shell_mkdir() {
-    shell_mko(2); // directory
+    uint32_t ndir = shell_mko(2); // directory
+    // Add the special navigator class
+    fat_object ex_nav = {
+        "",
+        "",
+        0x80,
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+    // Update the name and cluster of the *current* acting directory, acts as the parent directory
+    memcpy(&ex_nav.o_name, &shell_dir_name, 8);
+    ex_nav.cluster = shell_operating_dir;
+    fat_mko(ex_nav, ndir);
+}
+
+void shell_touch() {
+    uint32_t start = fat_dir_search(shell_operating_dir, shell_argtable[1], 1, true); // name only, not extension
+    int code = fat_file_touch(start, (uint8_t*)shell_argtable[2], strlen(shell_argtable[2]));
+    if (code == -1) {
+        shell_tty_print("\nFailed to write");
+    }
 }
