@@ -6,7 +6,7 @@ struct fat_object {
     uint32_t modified;
     uint32_t created;
     uint32_t o_size;
-    uint32_t parent_cluster;
+    uint32_t o_uuid;
 } __attribute__ ((packed));
 
 fat_object fat_cd_object;

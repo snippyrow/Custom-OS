@@ -40,9 +40,9 @@ const char keymap_shift[] = {
     '?', ' '
 };
 
-void shell_tty_print(char* string);
-void shell_memory_render();
-void shell_tty_clear();
+extern "C" void shell_tty_print(char* string);
+extern "C" void shell_memory_render();
+extern "C" void shell_tty_clear();
 void shell_win_test();
 uint8_t window_create(uint16_t win_pos_x, uint16_t win_pos_y, uint16_t win_size_x, uint16_t win_size_y, bool win_draggable, bool win_sizable, char* title, uint8_t context);
 void window_left();
@@ -63,6 +63,10 @@ void shell_ls();
 void shell_mkfile();
 void shell_mkdir();
 void shell_touch();
+void shell_exec();
+void shell_tasklist();
+
+void memloop();
 
 void window_preview_mover();
 
@@ -83,13 +87,15 @@ char commands[][2][128] = {
     {"MKDIR","[name] Create a subdirectory inside existing directory"},
     {"MKFILE","[name ext] Create a file in current directory"},
     {"MOUSE","[0/1 bool] Enable/disable mouse"},
+    {"RUN","[name] Execute a .run file"},
+    {"TASKLIST","Get a list of running tasks"},
     {"THEME","[[-l, -m], #num, BG, TX] List, modify or set theme"},
     {"TOUCH","[name, content] Modify file contents"}
 
 };
 
 fn_ptr shell_handlers[] = {
-    shell_ata_enum, shell_win_test, shell_cd, shell_tty_clear, shell_div, shell_format, shell_help, shell_ls, shell_mkdir, shell_mkfile, shell_mouse_en, shell_theme_set, shell_touch
+    shell_ata_enum, shell_win_test, shell_cd, shell_tty_clear, shell_div, shell_format, shell_help, shell_ls, shell_mkdir, shell_mkfile, shell_mouse_en, shell_exec, shell_tasklist, shell_theme_set, shell_touch
 };
 
 uint8_t shell_bg = 0x0;
@@ -100,6 +106,11 @@ uint8_t devshell_themes[5][2] = {
     {0xB0, 0x0F}, // classic blue
     {0x00, 0x2A}, // new orange
     {0x24, 0x0A} // ass.
+};
+
+// LBA start of each, then # of sectors
+uint32_t builtin_programs[3][2] = {
+    {150, 1}
 };
 
 // ALlows the shell to act "locally" in a directory

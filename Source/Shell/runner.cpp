@@ -2,6 +2,8 @@
 #include "../Drivers/ATA.cpp"
 #include "../FAT/cfat32.cpp"
 
+#include "../Taskmgr/task.cpp"
+
 // Pointers for ATA functions..
 void ATA_Read(uint32_t lba, uint16_t num_sectors, uint8_t *buffer);
 void free(uint64_t ptr, uint32_t size_t);
@@ -187,10 +189,34 @@ void shell_ata_enum() {
     }
 }
 
+
+uint32_t task_ret_addr; // test, for programs
+fat_object starter;
+
 void shell_format() {
     if (strcmp(shell_argtable[1],"-f")) {
         fat_format(str_int64(shell_argtable[2]));
         shell_tty_print("\nFormatted partition to CFAT32.");
+        
+        starter = {"home", "", 2, 0, 0, 0, 0, 0}; // empty home directory
+        uint32_t home_place = fat_mko(starter, 0);
+        starter = {"", "", 0x80, 0, 0, 0, 0, 0}; // navigator to root
+        fat_mko(starter, home_place);
+        starter = {"README", {'t','x','t'}, 1, 0, 0, 0, 169, 0}; // empty home directory
+        fat_mko(starter, 0);
+
+        starter = {"example", {'r','u','n'}, 1, 0, 0, 0, 512, 0}; // empty home directory
+        uint32_t begin = fat_mko(starter, 0);
+        
+        // Area to load example program
+        uint8_t* ata_ptr = (uint8_t*)malloc(512);
+        ATA_Read(150, 1, ata_ptr);
+        fat_file_touch(begin, ata_ptr, 512);
+        free(*ata_ptr, 512);
+
+        process_create((uint32_t)memloop, false);
+        process_create((uint32_t)memloop, false);
+
     } else if (strcmp(shell_argtable[1],"-s")) {
         uint32_t fid = fat_search();
         shell_tty_print("\nFirst found: 0x");
@@ -212,6 +238,33 @@ void shell_format() {
     } else if (strcmp(shell_argtable[1],"-back")) {
         shell_operating_dir = 0;
         shell_dir_name[0] = 0;
+    } else if (strcmp(shell_argtable[1],"-run")) {
+        ATA_Read(150, 1, (uint8_t*)0x700000);
+        uint32_t start_addr;
+        // detect if it has a program header
+        if (((uint16_t*)0x700000)[0] != 0x66BB) {
+            shell_tty_print("\nNot a valid program!");
+            return;
+        } else {
+            task_object state;
+            start_addr = ((uint32_t*)0x700006)[0];
+            uint32_t rot = process_create((uint32_t)memloop, false);
+            uint32_t pid = process_create(start_addr, false);
+            shell_tty_print("\n0x");
+            shell_tty_print(uhex32_str(start_addr));
+            shell_tty_print("\n-------\n0x");
+            shell_tty_print(uhex32_str(rot));
+            shell_tty_print("\n0x");
+            shell_tty_print(uhex32_str(pid));
+            
+            // Find space for the stack (1024-byte)
+            // task_object.esp = esp + 1024; // since stack decrements to go forward
+            
+
+            //task_save_context(&state);
+        }
+    } else if (strcmp(shell_argtable[1],"-l")) {
+        
     }
 }
 
@@ -303,5 +356,86 @@ void shell_touch() {
     int code = fat_file_touch(start, (uint8_t*)shell_argtable[2], strlen(shell_argtable[2]));
     if (code == -1) {
         shell_tty_print("\nFailed to write");
+    }
+}
+
+// first copy file data from builtin programs
+
+// Continue here. Notes:
+// remember to return to system stack before doing anything big like reading files
+void shell_exec() {
+    uint8_t si = 0;
+    uint8_t splitlen;
+    char exec_name[9];
+    char exec_ext[5] = {0,0,0,0,0};
+    while (shell_argtable[1][si]) {
+        if (shell_argtable[1][si] == '.') {
+            splitlen = si;
+            exec_name[si] = 0;
+            break;
+        }
+        si++;
+    }
+    memcpy(exec_name, shell_argtable[1], splitlen);
+    memcpy(exec_ext, shell_argtable[1] + splitlen, 4);
+
+    uint32_t start = fat_dir_search(shell_operating_dir, exec_name, 1, true); // name only, not extension. returns starting cluster
+    if (start == 0) {
+        shell_tty_print("\nFailed to locate.");
+        return;
+    }
+    // Now we have the start, load our file to memory (based on file size)
+    uint32_t exec_size = fat_cd_object.o_size;
+    uint8_t* buffer = (uint8_t*)malloc(exec_size); // the thing we got from searching
+
+    fat_file_read(start, buffer, exec_size);
+
+    uint16_t exec_sig = ((uint16_t*)buffer)[0];
+    uint32_t start_root = ((uint32_t*)(buffer + 2))[0];
+    uint32_t start_offset = ((uint32_t*)(buffer + 6))[0];
+
+    uint8_t *program_load = (uint8_t*)(start_root);
+    
+    if (exec_sig != 0x66BB) {
+        shell_tty_print("\nInvalid or corrupt program");
+        free(*buffer, exec_size);
+        return;
+    }
+
+    memcpy(program_load, buffer, exec_size); // copy program into memory (specified later)
+    free(*buffer, exec_size);
+
+    // Now spawn the process
+    uint32_t PID = process_create((uint32_t)(start_root + start_offset), false);
+    if (PID == 0) {
+        shell_tty_print("\nFailed to spawn process");
+        return;
+    }
+    return;
+
+}
+
+void shell_tasklist() {
+    shell_tty_clear();
+    shell_tty_print("\nList of running tasks..");
+    for (uint16_t i=0;i<MAX_PROCESSES;i++) {
+        if (tasklist[i].flags) {
+            char* p_id = uhex32_str(tasklist[i].PID);
+            char* p_esp = uhex32_str(tasklist[i].esp);
+            char* p_esp_start = uhex32_str(tasklist[i].esp_ptr);
+            char* p_ptr = uhex32_str(tasklist[i].ret_addr);
+            shell_tty_print("\n###############################\n\tPID: 0x");
+            shell_tty_print(p_id);
+            shell_tty_print("\n\tESP PTR: 0x");
+            shell_tty_print(p_esp);
+            shell_tty_print("\n\tESP START: 0x");
+            shell_tty_print(p_esp_start);
+            shell_tty_print("\n\tPTR: 0x");
+            shell_tty_print(p_ptr);
+            free(*p_id, 32);
+            free(*p_esp, 32);
+            free(*p_esp_start, 32);
+            free(*p_ptr, 32);
+        }
     }
 }

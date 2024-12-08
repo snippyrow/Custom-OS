@@ -9,7 +9,9 @@ void outw(short Port, short Value) {
     asm volatile("outw %1, %0" : : "dN" (Port), "a" (Value));
 }
 
-
+extern "C" void iret() {
+    asm volatile("iret");
+}
 
 // Get input for a specified I/O port, 8 bits
 unsigned char inb(unsigned short port) {

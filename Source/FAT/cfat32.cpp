@@ -248,7 +248,7 @@ int fat_mko(fat_object new_o, uint32_t dir_entry) {
     return -1;
 }
 
-int fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib, bool upd = false) {
+uint32_t fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib, bool upd = false) {
     // Find first occouring object based on params
     fat_object* dir_sector = (fat_object*)malloc(512);
     uint8_t* dir_ptr = (uint8_t*)dir_sector; // used for ATA buffering
@@ -275,7 +275,7 @@ int fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib, bool upd = f
             } else {
                 // No more to be found
                 free((uint64_t)dir_sector, 512);
-                return -1;
+                return 0;
             }
         }
         // Since attribute is cheaper, compare that first
@@ -291,9 +291,33 @@ int fat_dir_search(uint32_t dir_entry, char* oname, uint8_t attrib, bool upd = f
         }
     }
     free((uint64_t)dir_sector, 512);
-    return -1;
+    return 0;
 }
 
+void fat_file_read(uint32_t file_start, uint8_t* out_buffer, uint32_t size_t) {
+    uint8_t* buffer = (uint8_t*)malloc(512);
+    uint32_t c_chunk = file_start;
+    uint32_t FAT_Size = FAT_Length / 128; // in sectors of the disk
+    uint32_t lba = FAT_Offset + FAT_Size + c_chunk;
+    uint32_t next;
+    ATA_Read(lba, 1, buffer);
+    for (uint16_t i=0;i<size_t;i++) {
+        uint16_t index = i % 512;
+        if (index == 0 && i != 0) {
+            next = fat_ret_next(c_chunk);
+            c_chunk = next;
+            lba = FAT_Offset + FAT_Size + c_chunk;
+            if (next == EOC) {
+                free(*buffer, 512);
+                return;
+            }
+            ATA_Read(lba, 1, buffer);
+        }
+        out_buffer[i] = buffer[index];
+    }
+    free(*buffer, 512);
+    return;
+}
 
 // Re-writes file contents
 int fat_file_touch(uint32_t file_start, uint8_t* data_begin, uint32_t size_t) {
@@ -335,10 +359,11 @@ int fat_file_touch(uint32_t file_start, uint8_t* data_begin, uint32_t size_t) {
 
     // Pad the rest of the remaining cluster with zero
     uint16_t remaining = size_t % 512;
-    for (uint16_t i=remaining;i<512;i++) {
-        buffer[i] = 0;
+    if (remaining != 0) {
+        for (uint16_t i=remaining;i<512;i++) {
+            buffer[i] = 0;
+        }
     }
-
     ATA_Write(
         lba,
         1,
@@ -362,6 +387,11 @@ int fat_file_touch(uint32_t file_start, uint8_t* data_begin, uint32_t size_t) {
     return 0;
 }
 
+// Re-link a file to another location on the disk (DO NOT USE OFTEN!)
+int fat_relink(uint32_t dir_entry, char* o_name, uint8_t attrib) {
+    
+}
+
 // fat length is in clusters (should be some increment of 512)
 void fat_format(uint32_t fat_length) {
     // Write in the empty FAT table with a basic root directory
@@ -377,11 +407,5 @@ void fat_format(uint32_t fat_length) {
         ata_buffer[a_id] = NONE;
     }
     ATA_Write(FAT_Offset, FAT_Size, (uint8_t*)ata_buffer); // apply changes to disk
-    starter = {"home", "", 2, 0, 0, 0, 0, 0}; // empty home directory
-    uint32_t home_place = fat_mko(starter, 0);
-    starter = {"", "", 0x80, 0, 0, 0, 0, 0}; // navigator to root
-    fat_mko(starter, home_place);
-    starter = {"README", {'t','x','t'}, 1, 0, 0, 0, 169, 0}; // empty home directory
-    fat_mko(starter, 0);
     free(*ata_buffer, FAT_Size * 512);
 }

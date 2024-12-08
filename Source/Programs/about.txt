@@ -1,0 +1,36 @@
+This area is used for storing external programs, to be loaded into the OS later.
+
+For files, the makefile must insert them.
+In order to make contact with the kernel, files can use syscall 0x80
+
+An executable program has a .run extension
+
+A program is designed to not need to be linked with the OS on compiling, and works as its own data.
+
+A program should start out in assembly, definining things such as a header
+
+The file header begins as follows:
+0-1: executable signature
+2-5: Starting address to be loaded into
+
+Requirements:
+Task switching (PIT/Priority based)
+It's own stack
+
+Creating, then jumping to a new task:
+    Back-up the kernel task beforehand
+    
+    Find a spot for stack
+    Generate a good stack pointer
+    Put into a table, then call the switch function
+
+Task structure:
+    A table of valid tasks, not including the kernel.
+    When a task is first created, it first finds space for the stack, as well as memory that can be written to (later)
+    After, immediatly jump there and wait until the PIT calls for a re-run
+
+    The PIT is in the kernel
+
+    The kernel is the shell and process manager only!
+
+    Do priority later

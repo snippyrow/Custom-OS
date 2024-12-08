@@ -146,7 +146,7 @@ void shell_enter_handler() {
     free(*uppercmd, strlen(uppercmd)+2);
     shell_tty_print("\n/");
     shell_tty_print(shell_dir_name);
-    shell_tty_print("/ ");
+    shell_tty_print("/$ ");
     shell_memory_render();
 
 

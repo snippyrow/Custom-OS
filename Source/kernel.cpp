@@ -34,7 +34,14 @@ void mouse_middle_test() {
     shell_memory_render();
 }
 
+void memloop() {
+    //shell_tty_print("\nMLOK started..\n");
+    //shell_memory_render();
+    while(1) {}
+}
+
 extern "C" void kmain() {
+    concurrent_PID = 0;
     init_buffer(); // Initialize framebuffers
     WIN_RenderClear(shell_bg);
     WIN_SwitchFrame_A();
@@ -66,11 +73,9 @@ extern "C" void kmain() {
     shell_tty_print(res_y);
     shell_tty_print(" (");
     shell_tty_print(res_bpp);
-    shell_tty_print(" bits per pixel)\n");
-    shell_tty_print("Currently running a CFAT32 partition.");
-    shell_tty_print("\nType 'help' for a list of commands.\n/");
+    shell_tty_print(" bits per pixel)\nRemember to format CFAT32 before major usage!\nType 'help' for a list of commands.\n/");
     shell_tty_print(shell_dir_name);
-    shell_tty_print("/ ");
+    shell_tty_print("/$ ");
     shell_memory_render();
 
     free(*res_x,32);
@@ -80,7 +85,7 @@ extern "C" void kmain() {
     sti();
 
     
-
+    memloop();
 
     return;
 }

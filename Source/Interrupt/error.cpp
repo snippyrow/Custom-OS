@@ -83,6 +83,7 @@ void error_handler(int interrupt_num, int interrupt_addr) {
     free(*error_addr_finalstr,128);
     
     WIN_SwitchFrame();
+    shell_memory_render();
     cli();
     while(1);
     return;

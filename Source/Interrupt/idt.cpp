@@ -38,6 +38,12 @@ extern "C" void mouse_ghandler() {
     return;
 }
 
+// unused for now
+void syscall_handler() {
+    //iret_gen();
+}
+
+
 
 // Add required fields
 void idt_install() {
@@ -45,10 +51,12 @@ void idt_install() {
     set_idt_gate(0,(uint32_t)div0);
     set_idt_gate(8,(uint32_t)doublefault);
 
-    set_idt_gate(32, (uint32_t)pit_stub); // This is the system timer and MUST be enabled, or else we receive double/tripple faults
+    set_idt_gate(32, (uint32_t)proc_start); // This is the system timer and MUST be enabled, or else we receive double/tripple faults
     set_idt_gate(33,(uint32_t)kbd_stub);
 
     set_idt_gate(44,(uint32_t)mouse_stub);
+
+    set_idt_gate(0x80, (uint32_t)syscall_gen);
 
     // blank functions
 

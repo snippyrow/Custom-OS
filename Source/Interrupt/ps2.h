@@ -34,8 +34,8 @@ struct mouse_properties {
 // When a mouse is moved, the back needs to be re-rendered. This is supposed to do that.
 uint8_t mouse_mask[88];
 bool mouse_enabled = false;
-void shell_tty_print(char* string);
-void shell_memory_render();
+extern "C" void shell_tty_print(char* string);
+extern "C" void shell_memory_render();
 
 // each pixel only needs three combinations, so 00-11. Four pixels per byte, (6*6)*4 = 144
 // Sprite is 11x8, so

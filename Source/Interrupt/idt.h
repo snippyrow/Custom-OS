@@ -28,6 +28,12 @@ extern "C" void doublefault();
 extern "C" void kbd_stub();
 extern "C" void mouse_stub();
 extern "C" void pit_stub();
+extern "C" void syscall_gen();
+extern "C" void schedule_stub();
+
+extern "C" void proc_start();
+
+extern "C" void process_check();
 
 char error_list[32][32] = {
     "Division Error",
